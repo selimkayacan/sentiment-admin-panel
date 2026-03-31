@@ -690,7 +690,7 @@ async function createUser() {
         name,
         role,
         customer_id:  currentCustomer.customer_id,
-        redirect_url: localStorage.getItem('customer_panel_url') || '',
+        redirect_url: CUSTOMER_PANEL,
       }),
     });
     const data = await resp.json();
@@ -755,8 +755,17 @@ async function createLocation() {
   const type    = document.getElementById('nl-type').value;
   if (!name) { toast('Şube adı zorunlu', 'error'); return; }
 
-  const { data: brands } = await sb.from('brands').select('brand_id').eq('customer_id', currentCustomer.customer_id).limit(1);
-  if (!brands?.length) { toast('Önce wizard ile marka oluşturun', 'error'); closeModal('modal-new-location'); return; }
+  // Marka yoksa otomatik oluştur
+  let { data: brands } = await sb.from('brands').select('brand_id').eq('customer_id', currentCustomer.customer_id).limit(1);
+  if (!brands?.length) {
+    const { data: newBrand, error: be } = await sb.from('brands').insert({
+      customer_id: currentCustomer.customer_id,
+      name: currentCustomer.name,
+      monitoring_modes: ['location'],
+    }).select().single();
+    if (be) { toast('Marka oluşturulamadı: ' + be.message, 'error'); return; }
+    brands = [newBrand];
+  }
 
   const { error } = await sb.from('locations').insert({
     brand_id: brands[0].brand_id, name,
