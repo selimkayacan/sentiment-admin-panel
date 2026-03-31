@@ -165,115 +165,118 @@ select option{background:var(--raised)}
   <div id="page-customers" class="page active">
     <div class="topbar">
       <div>
-        <div class="topbar-title">Müşteriler</div>
-        <div class="topbar-sub">Hesap yönetimi ve connector erişimleri</div>
+        <div class="topbar-title" id="page-customers-title">Müşteriler</div>
+        <div class="topbar-sub" id="page-customers-sub">Hesap yönetimi ve connector erişimleri</div>
       </div>
-      <button class="btn btn-primary" onclick="openModal('modal-new-customer')">+ Yeni Müşteri</button>
-    </div>
-    <div class="content">
-      <div class="stats">
-        <div class="stat stat-accent">
-          <div class="stat-label">Toplam Müşteri</div>
-          <div class="stat-value" id="stat-total">—</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Aktif</div>
-          <div class="stat-value" id="stat-active">—</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Bu Ay Maliyet</div>
-          <div class="stat-value" id="stat-cost">—</div>
-          <div class="stat-sub">tahmini toplam</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Müşteri Listesi</span>
-          <input id="search" type="text" placeholder="Ara..." style="width:180px;padding:5px 10px;font-size:12px" oninput="filterCustomers()">
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Müşteri</th><th>Mod</th><th>Durum</th><th>Oluşturulma</th><th>İşlemler</th></tr>
-            </thead>
-            <tbody id="customers-tbody">
-              <tr><td colspan="5"><div class="empty-state"><span class="spinner"></span></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MÜŞTERİ DETAY -->
-  <div id="page-customer-detail" class="page">
-    <div class="topbar">
-      <div>
-        <div class="topbar-title" id="detail-title">Müşteri Detayı</div>
-        <div class="topbar-sub" id="detail-sub"></div>
-      </div>
-      <div class="actions">
-        <button class="btn btn-ghost" onclick="navigate('customers')">← Geri</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteCurrentCustomer()">Sil</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" id="btn-back-customers" onclick="backToCustomers()" style="display:none">← Geri</button>
+        <button class="btn btn-primary" id="btn-new-customer" onclick="openModal('modal-new-customer')">+ Yeni Müşteri</button>
       </div>
     </div>
     <div class="content">
 
-      <!-- Müşteri Bilgileri -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
-        <div class="stat">
-          <div class="stat-label">Mod</div>
-          <div id="det-mode" style="margin-top:8px"></div>
+      <!-- MÜŞTERİ LİSTESİ -->
+      <div id="customers-list-section">
+        <div class="stats">
+          <div class="stat stat-accent">
+            <div class="stat-label">Toplam Müşteri</div>
+            <div class="stat-value" id="stat-total">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Aktif</div>
+            <div class="stat-value" id="stat-active">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Bu Ay Maliyet</div>
+            <div class="stat-value" id="stat-cost">—</div>
+            <div class="stat-sub">tahmini toplam</div>
+          </div>
         </div>
-        <div class="stat">
-          <div class="stat-label">Durum</div>
-          <div id="det-status" style="margin-top:8px"></div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Kullanıcılar</div>
-          <div class="stat-value" id="det-users">—</div>
-          <div class="stat-sub">kayıtlı kullanıcı</div>
-        </div>
-      </div>
 
-      <!-- Kullanıcı Ekle -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-header">
-          <span class="card-title">Kullanıcılar</span>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-new-user')">+ Kullanıcı Ekle</button>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>E-posta</th><th>Ad</th><th>Rol</th><th>İşlemler</th></tr></thead>
-            <tbody id="users-tbody">
-              <tr><td colspan="4"><div class="empty-state">Henüz kullanıcı yok</div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Connector Erişimleri -->
-      <div class="card" style="margin-bottom:20px">
-        <div class="card-header">
-          <span class="card-title">Connector Erişimleri</span>
-          <span style="font-size:11px;color:var(--dim)">Müşterinin erişebildiği veri kaynakları</span>
-        </div>
-        <div class="card-body">
-          <div class="connector-grid" id="connectors-grid">
-            <div class="empty-state">Yükleniyor...</div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Müşteri Listesi</span>
+            <input id="search" type="text" placeholder="Ara..." autocomplete="off" style="width:180px;padding:5px 10px;font-size:12px" oninput="filterCustomers()">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Müşteri</th><th>Mod</th><th>Durum</th><th>Oluşturulma</th><th>İşlemler</th></tr>
+              </thead>
+              <tbody id="customers-tbody">
+                <tr><td colspan="5"><div class="empty-state"><span class="spinner"></span></div></td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <!-- Otomatik Çekim (sadece SaaS Full) -->
-      <div class="card" id="auto-fetch-card">
-        <div class="card-header">
-          <span class="card-title">Otomatik Çekim</span>
-          <span style="font-size:11px;color:var(--dim)" id="auto-fetch-mode-badge"></span>
+      <!-- MÜŞTERİ DETAY (inline) -->
+      <div id="customer-detail-section" style="display:none">
+        <div style="margin-bottom:20px">
+          <div style="font-size:20px;font-weight:700;color:var(--text)" id="detail-title">Müşteri Detayı</div>
+          <div style="font-size:12px;color:var(--dim);margin-top:4px" id="detail-sub"></div>
         </div>
-        <div class="card-body" id="auto-fetch-body">
-          <div class="empty-state">Yükleniyor...</div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+          <div class="stat">
+            <div class="stat-label">Mod</div>
+            <div id="det-mode" style="margin-top:8px"></div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Durum</div>
+            <div id="det-status" style="margin-top:8px"></div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Kullanıcılar</div>
+            <div class="stat-value" id="det-users">—</div>
+            <div class="stat-sub">kayıtlı kullanıcı</div>
+          </div>
+        </div>
+
+        <!-- Kullanıcılar -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header">
+            <span class="card-title">Kullanıcılar</span>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-new-user')">+ Kullanıcı Ekle</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>E-posta</th><th>Ad</th><th>Rol</th><th>İşlemler</th></tr></thead>
+              <tbody id="users-tbody">
+                <tr><td colspan="4"><div class="empty-state">Henüz kullanıcı yok</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Connector Erişimleri -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header">
+            <span class="card-title">Connector Erişimleri</span>
+            <span style="font-size:11px;color:var(--dim)">Müşterinin erişebildiği veri kaynakları</span>
+          </div>
+          <div class="card-body">
+            <div class="connector-grid" id="connectors-grid">
+              <div class="empty-state">Yükleniyor...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Otomatik Çekim -->
+        <div class="card" id="auto-fetch-card">
+          <div class="card-header">
+            <span class="card-title">Otomatik Çekim</span>
+            <span style="font-size:11px;color:var(--dim)" id="auto-fetch-mode-badge"></span>
+          </div>
+          <div class="card-body" id="auto-fetch-body">
+            <div class="empty-state">Yükleniyor...</div>
+          </div>
+        </div>
+
+        <!-- Sil -->
+        <div style="margin-top:20px;text-align:right">
+          <button class="btn btn-danger" onclick="deleteCurrentCustomer()">Bu Müşteriyi Sil</button>
         </div>
       </div>
 
@@ -557,14 +560,31 @@ async function createCustomer() {
 async function openCustomer(customerId) {
   currentCustomer = allCustomers.find(c => c.customer_id === customerId);
   if (!currentCustomer) return;
-  navigate('customer-detail');
+
+  document.getElementById('customers-list-section').style.display = 'none';
+  document.getElementById('customer-detail-section').style.display = 'block';
+  document.getElementById('btn-back-customers').style.display = 'inline-flex';
+  document.getElementById('btn-new-customer').style.display = 'none';
+  document.getElementById('page-customers-title').textContent = currentCustomer.name;
+  document.getElementById('page-customers-sub').textContent = 'Müşteri detayı ve erişim yönetimi';
   document.getElementById('detail-title').textContent = currentCustomer.name;
-  document.getElementById('detail-sub').textContent   = 'Müşteri detayı ve erişim yönetimi';
+  document.getElementById('detail-sub').textContent = '';
   document.getElementById('det-mode').innerHTML   = currentCustomer.modes ? modeBadge(currentCustomer.modes.key) : '—';
   document.getElementById('det-status').innerHTML = statusBadge(currentCustomer.status);
+
   loadUsers(customerId);
   loadCustomerConnectors(customerId);
   loadAutoFetch(customerId);
+}
+
+function backToCustomers() {
+  document.getElementById('customers-list-section').style.display = 'block';
+  document.getElementById('customer-detail-section').style.display = 'none';
+  document.getElementById('btn-back-customers').style.display = 'none';
+  document.getElementById('btn-new-customer').style.display = 'inline-flex';
+  document.getElementById('page-customers-title').textContent = 'Müşteriler';
+  document.getElementById('page-customers-sub').textContent = 'Hesap yönetimi ve connector erişimleri';
+  currentCustomer = null;
 }
 
 // ── USERS ────────────────────────────────────────────────────
@@ -783,7 +803,7 @@ async function deleteCurrentCustomer() {
   if (!confirm(`"${currentCustomer.name}" müşterisini silmek istediğine emin misin?`)) return;
   await sb.from('customers').delete().eq('customer_id', currentCustomer.customer_id);
   toast('Müşteri silindi', 'success');
-  navigate('customers');
+  backToCustomers();
   loadCustomers();
 }
 
