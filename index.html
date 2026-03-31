@@ -235,6 +235,22 @@ select option{background:var(--raised)}
           </div>
         </div>
 
+        <!-- Lokasyonlar -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header">
+            <span class="card-title">Lokasyonlar / Şubeler</span>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-new-location')">+ Şube Ekle</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Şube Adı</th><th>Adres</th><th>Google Place ID</th><th>Tip</th><th>İşlemler</th></tr></thead>
+              <tbody id="locations-tbody">
+                <tr><td colspan="5"><div class="empty-state">Henüz şube yok</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Kullanıcılar -->
         <div class="card" style="margin-bottom:20px">
           <div class="card-header">
@@ -378,6 +394,42 @@ select option{background:var(--raised)}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-customer')">İptal</button>
       <button class="btn btn-primary" onclick="createCustomer()">Oluştur</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Yeni Lokasyon -->
+<div class="modal-overlay" id="modal-new-location">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Şube / Lokasyon Ekle</div>
+      <button class="modal-close" onclick="closeModal('modal-new-location')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Şube Adı</label>
+        <input id="nl-name" type="text" placeholder="örn: Rossmann Ataşehir">
+      </div>
+      <div class="form-group">
+        <label>Adres</label>
+        <input id="nl-address" type="text" placeholder="İstanbul, Ataşehir">
+      </div>
+      <div class="form-group">
+        <label>Google Place ID</label>
+        <input id="nl-place-id" type="text" placeholder="ChIJ...">
+        <div class="form-hint">Google Maps'ten place_id. Boş bırakılabilir, sonradan eklenebilir.</div>
+      </div>
+      <div class="form-group">
+        <label>Tip</label>
+        <select id="nl-type">
+          <option value="branch">Şube (Google Maps)</option>
+          <option value="general">Genel İzleme (Twitter/Ekşi)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-location')">İptal</button>
+      <button class="btn btn-primary" onclick="createLocation()">Ekle</button>
     </div>
   </div>
 </div>
@@ -574,6 +626,7 @@ async function openCustomer(customerId) {
   document.getElementById('det-status').innerHTML = statusBadge(currentCustomer.status);
 
   loadUsers(customerId);
+  loadLocations(customerId);
   loadCustomerConnectors(customerId);
   loadAutoFetch(customerId);
 }
@@ -666,6 +719,61 @@ async function deleteUser(userId) {
   await sb.from('users').delete().eq('user_id', userId);
   toast('Kullanıcı silindi', 'success');
   loadUsers(currentCustomer.customer_id);
+}
+
+// ── LOKASYONLAR ──────────────────────────────────────────────
+async function loadLocations(customerId) {
+  const tbody = document.getElementById('locations-tbody');
+  if (!tbody) return;
+  const { data: brands } = await sb.from('brands').select('brand_id').eq('customer_id', customerId);
+  if (!brands?.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Henüz marka yok</div></td></tr>';
+    return;
+  }
+  const brandIds = brands.map(b => b.brand_id);
+  const { data: locs } = await sb.from('locations').select('*').in('brand_id', brandIds).order('name');
+  if (!locs?.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Henüz şube yok</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = locs.map(l => `
+    <tr>
+      <td><strong>${l.name}</strong></td>
+      <td style="color:var(--dim);font-size:12px">${l.address || '—'}</td>
+      <td style="font-size:11px;color:var(--dim)">${l.google_place_id || '—'}</td>
+      <td><span class="badge badge-${l.location_type === 'branch' ? 'active' : 'beta'}">${l.location_type === 'branch' ? 'Şube' : 'Genel'}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteLocation('${l.location_id}', '${customerId}')">Sil</button></td>
+    </tr>
+  `).join('');
+}
+
+async function createLocation() {
+  if (!currentCustomer) return;
+  const name    = document.getElementById('nl-name').value.trim();
+  const address = document.getElementById('nl-address').value.trim();
+  const placeId = document.getElementById('nl-place-id').value.trim();
+  const type    = document.getElementById('nl-type').value;
+  if (!name) { toast('Şube adı zorunlu', 'error'); return; }
+
+  const { data: brands } = await sb.from('brands').select('brand_id').eq('customer_id', currentCustomer.customer_id).limit(1);
+  if (!brands?.length) { toast('Önce wizard ile marka oluşturun', 'error'); closeModal('modal-new-location'); return; }
+
+  const { error } = await sb.from('locations').insert({
+    brand_id: brands[0].brand_id, name,
+    address: address || null, google_place_id: placeId || null, location_type: type,
+  });
+  if (error) { toast('Hata: ' + error.message, 'error'); return; }
+  toast('Şube eklendi ✓', 'success');
+  closeModal('modal-new-location');
+  ['nl-name','nl-address','nl-place-id'].forEach(id => document.getElementById(id).value = '');
+  loadLocations(currentCustomer.customer_id);
+}
+
+async function deleteLocation(locationId, customerId) {
+  if (!confirm('Bu şubeyi silmek istediğine emin misin?')) return;
+  await sb.from('locations').delete().eq('location_id', locationId);
+  toast('Şube silindi', 'success');
+  loadLocations(customerId);
 }
 
 // ── OTOMATİK ÇEKİM YÖNETİMİ ────────────────────────────────
