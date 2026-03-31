@@ -415,25 +415,26 @@ select option{background:var(--raised)}
 <div class="toast-container" id="toasts"></div>
 
 <script>
+// ── KREDENSİYELLER — DOĞRUDAN GÖMÜLİ ──────────────────────
+const SUPABASE_URL      = 'https://escjdzsfxzwvshapzugb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzY2pkenNmeHp3dnNoYXB6dWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDQzMzgsImV4cCI6MjA4OTg4MDMzOH0.ylywekAEhONMpx5RBCdZXafUna9jZcB19etFrEcRJe8';
+const ANALYSIS_URL      = 'https://web-production-f48f6.up.railway.app';
+const APP_SECRET_VAL    = 'KadirovaCadno:36';
+const CUSTOMER_PANEL    = 'https://selimkayacan.github.io/sentiment-customer-panel';
+
 // ── STATE ──────────────────────────────────────────────────
 let sb = null, allCustomers = [], allModes = [], allConnectors = [];
 let currentCustomer = null;
 
-function cfg() { return { url: localStorage.getItem('sb_url')||'', key: localStorage.getItem('sb_key')||'' }; }
+function cfg() { return { url: SUPABASE_URL, key: SUPABASE_ANON_KEY }; }
+
 function saveSettings() {
-  localStorage.setItem('sb_url', document.getElementById('set-url').value);
-  localStorage.setItem('sb_key', document.getElementById('set-key').value);
-  const au = document.getElementById('set-analysis-url');
-  const as = document.getElementById('set-app-secret');
-  const cu = document.getElementById('set-customer-url');
-  if (au) localStorage.setItem('analysis_url',       au.value);
-  if (as) localStorage.setItem('app_secret',         as.value);
-  if (cu) localStorage.setItem('customer_panel_url', cu.value);
+  // Arayüzdeki değerleri system_settings tablosuna kaydet
+  // localStorage artık kullanılmıyor
 }
+
 function initSB() {
-  const { url, key } = cfg();
-  if (!url || !key) return false;
-  try { sb = supabase.createClient(url, key); return true; } catch { return false; }
+  try { sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); return true; } catch { return false; }
 }
 
 // ── NAV ────────────────────────────────────────────────────
@@ -594,8 +595,8 @@ async function createUser() {
   const role  = document.getElementById('nu-role').value;
   if (!email || !name) { toast('E-posta ve ad zorunlu', 'error'); return; }
 
-  const analysisUrl = localStorage.getItem('analysis_url') || '';
-  const appSecret   = localStorage.getItem('app_secret') || '';
+  const analysisUrl = ANALYSIS_URL;
+  const appSecret   = APP_SECRET_VAL;
 
   if (!analysisUrl || !appSecret) {
     toast('Önce Ayarlar sayfasından Analysis Engine URL ve APP_SECRET girin', 'error');
@@ -866,19 +867,19 @@ async function saveSystemSettings() {
 
 // ── SETTINGS ─────────────────────────────────────────────────
 function loadSettingsPage() {
-  const { url, key } = cfg();
-  document.getElementById('set-url').value = url;
-  document.getElementById('set-key').value = key;
+  const su = document.getElementById('set-url');
+  const sk = document.getElementById('set-key');
   const au = document.getElementById('set-analysis-url');
   const as = document.getElementById('set-app-secret');
   const cu = document.getElementById('set-customer-url');
-  if (au) au.value = localStorage.getItem('analysis_url') || '';
-  if (as) as.value = localStorage.getItem('app_secret') || '';
-  if (cu) cu.value = localStorage.getItem('customer_panel_url') || '';
+  if (su) su.value = SUPABASE_URL;
+  if (sk) sk.value = SUPABASE_ANON_KEY;
+  if (au) au.value = ANALYSIS_URL;
+  if (as) as.value = APP_SECRET_VAL;
+  if (cu) cu.value = CUSTOMER_PANEL;
 }
 
 async function reconnect() {
-  saveSettings();
   const ok = initSB();
   const el = document.getElementById('conn-status');
   if (!ok) { el.textContent = '✗ Geçersiz'; el.style.color = 'var(--red)'; return; }
@@ -894,9 +895,8 @@ async function reconnect() {
 
 // ── BOOT ─────────────────────────────────────────────────────
 (function boot() {
-  const { url, key } = cfg();
-  if (url && key) { initSB(); loadAll(); }
-  else toast('Ayarlar sayfasından Supabase bağlantısını yapılandır', 'info');
+  initSB();
+  loadAll();
 })();
 </script>
 </body>
