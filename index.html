@@ -239,7 +239,7 @@ select option{background:var(--raised)}
         <div class="card" style="margin-bottom:20px">
           <div class="card-header">
             <span class="card-title">Lokasyonlar / Şubeler</span>
-            <button class="btn btn-primary btn-sm" onclick="openModal('modal-new-location')">+ Şube Ekle</button>
+            <button class="btn btn-primary btn-sm" onclick="openLocationWizard()">+ Şube Ekle</button>
           </div>
           <div class="table-wrap">
             <table>
@@ -719,6 +719,18 @@ async function deleteUser(userId) {
   await sb.from('users').delete().eq('user_id', userId);
   toast('Kullanıcı silindi', 'success');
   loadUsers(currentCustomer.customer_id);
+}
+
+function openLocationWizard() {
+  if (!currentCustomer) return;
+  const wizUrl = `location_wizard.html?customer_id=${currentCustomer.customer_id}&return=${encodeURIComponent(window.location.href)}`;
+  const win = window.open(wizUrl, '_blank', 'width=740,height=800,scrollbars=yes');
+  window.addEventListener('message', (e) => {
+    if (e.data?.type === 'locations_saved') {
+      loadLocations(currentCustomer.customer_id);
+      toast(`${e.data.count} lokasyon eklendi ✓`, 'success');
+    }
+  }, { once: true });
 }
 
 // ── LOKASYONLAR ──────────────────────────────────────────────
