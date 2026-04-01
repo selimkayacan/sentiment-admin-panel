@@ -199,37 +199,40 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb          = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const params      = new URLSearchParams(window.location.search);
 const CUSTOMER_ID = params.get('customer_id') || '';
+const BRAND_ID_PARAM = params.get('brand_id') || '';
+const BRAND_NAME_PARAM = params.get('brand_name') || '';
 const RETURN_URL  = params.get('return') || '';
 
-let addedLocations = [];   // { name, address, placeId, type, lat, lng }
+let addedLocations = [];
 let gmapsUrl = '', appSecret = '', brandId = '';
 
-// ── BOOT ─────────────────────────────────────────────────
 async function boot() {
-  if (!CUSTOMER_ID) { showAlert('Müşteri ID bulunamadı', 'error'); return; }
+  if (!CUSTOMER_ID && !BRAND_ID_PARAM) { showAlert('Müşteri veya Marka ID bulunamadı', 'error'); return; }
 
-  // Müşteri adını göster
-  const { data: cust } = await sb.from('customers').select('name').eq('customer_id', CUSTOMER_ID).single();
-  if (cust) document.getElementById('customer-name-sub').textContent = `Müşteri: ${cust.name}`;
+  if (BRAND_ID_PARAM) {
+    // Rakip marka modu
+    brandId = BRAND_ID_PARAM;
+    document.getElementById('customer-name-sub').textContent = `Rakip Marka: ${BRAND_NAME_PARAM}`;
+  } else {
+    // Normal müşteri modu
+    const { data: cust } = await sb.from('customers').select('name').eq('customer_id', CUSTOMER_ID).single();
+    if (cust) document.getElementById('customer-name-sub').textContent = `Müşteri: ${cust.name}`;
 
-  // System settings'ten gmaps URL ve secret'i al
+    let { data: brands } = await sb.from('brands').select('brand_id').eq('customer_id', CUSTOMER_ID).limit(1);
+    if (!brands?.length) {
+      const { data: newBrand } = await sb.from('brands').insert({
+        customer_id: CUSTOMER_ID, name: cust?.name || 'Marka', monitoring_modes: ['location'],
+      }).select().single();
+      brandId = newBrand?.brand_id || '';
+    } else {
+      brandId = brands[0].brand_id;
+    }
+  }
+
   const { data: settings } = await sb.from('system_settings').select('key,value');
   const m = {}; (settings||[]).forEach(r => m[r.key] = r.value);
-  gmapsUrl   = m['gmaps_url']   || '';
-  appSecret  = m['app_secret']  || '';
-
-  // Mevcut markayı bul veya oluştur
-  let { data: brands } = await sb.from('brands').select('brand_id').eq('customer_id', CUSTOMER_ID).limit(1);
-  if (!brands?.length) {
-    const { data: newBrand } = await sb.from('brands').insert({
-      customer_id:      CUSTOMER_ID,
-      name:             cust?.name || 'Marka',
-      monitoring_modes: ['location'],
-    }).select().single();
-    brandId = newBrand?.brand_id || '';
-  } else {
-    brandId = brands[0].brand_id;
-  }
+  gmapsUrl  = m['gmaps_url']  || '';
+  appSecret = m['app_secret'] || '';
 }
 
 // ── TABS ─────────────────────────────────────────────────
@@ -422,9 +425,12 @@ async function saveAll() {
   try {
     if (!brandId) throw new Error('Marka ID bulunamadı');
 
+    // Connector listesini al
+    const { data: connectors } = await sb.from('connectors').select('connector_id, key');
+
     let saved = 0;
     for (const loc of addedLocations) {
-      const { error } = await sb.from('locations').insert({
+      const { data: newLoc, error } = await sb.from('locations').insert({
         brand_id:        brandId,
         name:            loc.name,
         address:         loc.address || null,
@@ -432,15 +438,28 @@ async function saveAll() {
         lat:             loc.lat || null,
         lng:             loc.lng || null,
         location_type:   loc.type,
-      });
-      if (!error) saved++;
+      }).select().single();
+
+      if (error) continue;
+      saved++;
+
+      // location_connectors oluştur
+      for (const conn of (connectors || [])) {
+        if (loc.type === 'branch'  && conn.key !== 'google_maps') continue;
+        if (loc.type === 'general' && conn.key === 'google_maps') continue;
+        await sb.from('location_connectors').upsert({
+          location_id:  newLoc.location_id,
+          connector_id: conn.connector_id,
+          enabled:      true,
+          external_id:  loc.placeId || null,
+        }, { onConflict: 'location_id,connector_id' });
+      }
     }
 
     showAlert(`✓ ${saved} lokasyon başarıyla kaydedildi!`, 'success');
     btn.textContent = `✓ ${saved} Kaydedildi`;
     btn.style.background = 'var(--green)';
 
-    // Opener'a mesaj gönder
     window.opener?.postMessage({ type: 'locations_saved', count: saved }, '*');
 
     setTimeout(() => {
