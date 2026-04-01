@@ -251,6 +251,22 @@ select option{background:var(--raised)}
           </div>
         </div>
 
+        <!-- Rakip Markalar -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header">
+            <span class="card-title">Rakip Markalar</span>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-new-competitor')">+ Rakip Ekle</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Marka</th><th>Tip</th><th>Lokasyon Sayısı</th><th>İşlemler</th></tr></thead>
+              <tbody id="competitors-tbody">
+                <tr><td colspan="4"><div class="empty-state">Henüz rakip tanımlı değil</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Kullanıcılar -->
         <div class="card" style="margin-bottom:20px">
           <div class="card-header">
@@ -394,6 +410,46 @@ select option{background:var(--raised)}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-customer')">İptal</button>
       <button class="btn btn-primary" onclick="createCustomer()">Oluştur</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Yeni Rakip -->
+<div class="modal-overlay" id="modal-new-competitor">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Rakip Marka Ekle</div>
+      <button class="modal-close" onclick="closeModal('modal-new-competitor')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-hint" style="padding:12px;background:var(--raised);border-radius:var(--r);margin-bottom:16px">
+        💡 Rakip marka sistemde başka bir müşteri olarak kayıtlıysa otomatik bağlanır — veri tekrar çekilmez.<br>
+        Kayıtlı değilse "phantom marka" olarak oluşturulur ve Google Maps'ten çekim yapılır.
+      </div>
+      <div class="form-group">
+        <label>Marka Adı</label>
+        <input id="comp-name" type="text" placeholder="örn: Zara, Mango, H&M">
+      </div>
+      <div class="form-group">
+        <label>Sektör</label>
+        <select id="comp-sector">
+          <option value="retail">Perakende</option>
+          <option value="restaurant">Restoran/Kafe</option>
+          <option value="health">Sağlık</option>
+          <option value="hotel">Otel</option>
+          <option value="ecommerce">E-ticaret</option>
+          <option value="custom">Diğer</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Google Place ID'leri (opsiyonel, virgülle ayır)</label>
+        <input id="comp-place-ids" type="text" placeholder="ChIJ..., ChIJ...">
+        <div class="form-hint">Boş bırakılabilir — sonradan lokasyon wizard ile eklenebilir</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-competitor')">İptal</button>
+      <button class="btn btn-primary" onclick="createCompetitor()">Ekle</button>
     </div>
   </div>
 </div>
@@ -627,6 +683,7 @@ async function openCustomer(customerId) {
 
   loadUsers(customerId);
   loadLocations(customerId);
+  loadCompetitors(customerId);
   loadCustomerConnectors(customerId);
   loadAutoFetch(customerId);
 }
@@ -731,6 +788,110 @@ function openLocationWizard() {
       toast(`${e.data.count} lokasyon eklendi ✓`, 'success');
     }
   }, { once: true });
+}
+
+// ── RAKİP MARKALAR ───────────────────────────────────────
+async function loadCompetitors(customerId) {
+  const tbody = document.getElementById('competitors-tbody');
+  if (!tbody) return;
+
+  const { data } = await sb.from('competitor_brands')
+    .select('id, brands(brand_id, name, is_phantom)')
+    .eq('customer_id', customerId);
+
+  if (!data?.length) {
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">Henüz rakip tanımlı değil</div></td></tr>';
+    return;
+  }
+
+  // Her rakip için lokasyon sayısını çek
+  const rows = await Promise.all(data.map(async (c) => {
+    const brand = c.brands || {};
+    const { count } = await sb.from('locations')
+      .select('location_id', { count: 'exact', head: true })
+      .eq('brand_id', brand.brand_id);
+    return { ...c, brand, locCount: count || 0 };
+  }));
+
+  tbody.innerHTML = rows.map(c => `
+    <tr>
+      <td><strong>${c.brand.name}</strong></td>
+      <td><span class="badge badge-${c.brand.is_phantom ? 'consulting' : 'saas_full'}">${c.brand.is_phantom ? 'Phantom' : 'Müşteri'}</span></td>
+      <td>${c.locCount} şube</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openCompetitorLocWizard('${c.brand.brand_id}','${c.brand.name.replace(/'/g,"\\'")}')">Şube Ekle</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCompetitor('${c.id}','${customerId}')">Sil</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function createCompetitor() {
+  if (!currentCustomer) return;
+  const name     = document.getElementById('comp-name').value.trim();
+  const sector   = document.getElementById('comp-sector').value;
+  const placeIds = document.getElementById('comp-place-ids').value
+    .split(',').map(p => p.trim()).filter(Boolean);
+
+  if (!name) { toast('Marka adı zorunlu', 'error'); return; }
+
+  // Sistemde aynı isimli marka var mı?
+  const { data: existing } = await sb.from('brands')
+    .select('brand_id, name, customer_id').ilike('name', name).limit(1);
+
+  let brandId;
+
+  if (existing?.length && existing[0].customer_id !== currentCustomer.customer_id) {
+    // Başka bir müşteriye ait marka — direkt bağla
+    brandId = existing[0].brand_id;
+    toast(`"${existing[0].name}" markası sistemde bulundu — bağlandı`, 'info');
+  } else {
+    // Phantom marka oluştur
+    const { data: newBrand, error } = await sb.from('brands').insert({
+      name,
+      is_phantom:       true,
+      sector_template:  sector,
+      monitoring_modes: ['location'],
+    }).select().single();
+    if (error) { toast('Marka oluşturulamadı: ' + error.message, 'error'); return; }
+    brandId = newBrand.brand_id;
+
+    // Place ID'leri varsa lokasyon olarak ekle
+    for (const pid of placeIds) {
+      await sb.from('locations').insert({
+        brand_id:        brandId,
+        name:            `${name} Şube`,
+        google_place_id: pid,
+        location_type:   'branch',
+      });
+    }
+  }
+
+  // Rakip ilişkisini kur
+  const { error: ce } = await sb.from('competitor_brands').insert({
+    customer_id: currentCustomer.customer_id,
+    brand_id:    brandId,
+  });
+
+  if (ce) { toast('Hata: ' + ce.message, 'error'); return; }
+
+  toast(`✓ ${name} rakip olarak eklendi`, 'success');
+  closeModal('modal-new-competitor');
+  document.getElementById('comp-name').value = '';
+  document.getElementById('comp-place-ids').value = '';
+  loadCompetitors(currentCustomer.customer_id);
+}
+
+async function deleteCompetitor(id, customerId) {
+  if (!confirm('Bu rakibi kaldırmak istiyor musunuz?')) return;
+  await sb.from('competitor_brands').delete().eq('id', id);
+  toast('Rakip kaldırıldı', 'success');
+  loadCompetitors(customerId);
+}
+
+function openCompetitorLocWizard(brandId, brandName) {
+  const wizUrl = `location_wizard.html?brand_id=${brandId}&brand_name=${encodeURIComponent(brandName)}&return=${encodeURIComponent(window.location.href)}`;
+  window.open(wizUrl, '_blank', 'width=740,height=800,scrollbars=yes');
 }
 
 // ── LOKASYONLAR ──────────────────────────────────────────────
