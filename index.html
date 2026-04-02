@@ -423,33 +423,27 @@ select option{background:var(--raised)}
     </div>
     <div class="modal-body">
       <div class="form-hint" style="padding:12px;background:var(--raised);border-radius:var(--r);margin-bottom:16px">
-        💡 Rakip marka sistemde başka bir müşteri olarak kayıtlıysa otomatik bağlanır — veri tekrar çekilmez.<br>
-        Kayıtlı değilse "phantom marka" olarak oluşturulur ve Google Maps'ten çekim yapılır.
+        💡 Marka adını girin. Sistem, müşterinin şubelerine yakın (<strong>500m</strong>) bu markaya ait şubeleri otomatik bulur ve ekler.
       </div>
       <div class="form-group">
-        <label>Marka Adı</label>
-        <input id="comp-name" type="text" placeholder="örn: Zara, Mango, H&M">
+        <label>Rakip Marka Adı</label>
+        <input id="comp-name" type="text" placeholder="örn: Zara, Mango, H&M" onkeydown="if(event.key==='Enter')discoverCompetitor()">
       </div>
       <div class="form-group">
-        <label>Sektör</label>
-        <select id="comp-sector">
-          <option value="retail">Perakende</option>
-          <option value="restaurant">Restoran/Kafe</option>
-          <option value="health">Sağlık</option>
-          <option value="hotel">Otel</option>
-          <option value="ecommerce">E-ticaret</option>
-          <option value="custom">Diğer</option>
+        <label>Arama Yarıçapı</label>
+        <select id="comp-radius">
+          <option value="500">500m (yakın şubeler)</option>
+          <option value="1000">1km</option>
+          <option value="2000">2km</option>
+          <option value="5000">5km</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Google Place ID'leri (opsiyonel, virgülle ayır)</label>
-        <input id="comp-place-ids" type="text" placeholder="ChIJ..., ChIJ...">
-        <div class="form-hint">Boş bırakılabilir — sonradan lokasyon wizard ile eklenebilir</div>
-      </div>
+      <!-- Keşif sonuçları -->
+      <div id="comp-discover-result" style="display:none;margin-top:12px"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-competitor')">İptal</button>
-      <button class="btn btn-primary" onclick="createCompetitor()">Ekle</button>
+      <button class="btn btn-primary" onclick="discoverCompetitor()" id="btn-discover">🔍 Yakın Şubeleri Bul</button>
     </div>
   </div>
 </div>
@@ -826,72 +820,150 @@ async function loadCompetitors(customerId) {
   `).join('');
 }
 
-async function createCompetitor() {
+async function discoverCompetitor() {
   if (!currentCustomer) return;
-  const name     = document.getElementById('comp-name').value.trim();
-  const sector   = document.getElementById('comp-sector').value;
-  const placeIds = document.getElementById('comp-place-ids').value
-    .split(',').map(p => p.trim()).filter(Boolean);
-
+  const name   = document.getElementById('comp-name').value.trim();
+  const radius = parseInt(document.getElementById('comp-radius').value);
   if (!name) { toast('Marka adı zorunlu', 'error'); return; }
 
-  // Sistemde aynı isimli marka var mı?
-  const { data: existing } = await sb.from('brands')
-    .select('brand_id, name, customer_id').ilike('name', name).limit(1);
+  const btn     = document.getElementById('btn-discover');
+  const resultEl = document.getElementById('comp-discover-result');
+  btn.disabled  = true; btn.textContent = '⏳ Aranıyor...';
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div class="empty-state"><span class="spinner"></span> Şubelere yakın rakipler aranıyor...</div>';
+
+  // Müşterinin şubelerini ve koordinatlarını çek
+  const { data: brands } = await sb.from('brands').select('brand_id').eq('customer_id', currentCustomer.customer_id);
+  if (!brands?.length) { resultEl.innerHTML = '<div class="empty-state">Önce müşteriye şube ekleyin</div>'; btn.disabled=false; btn.textContent='🔍 Yakın Şubeleri Bul'; return; }
+
+  const brandIds = brands.map(b=>b.brand_id);
+  const { data: myLocs } = await sb.from('locations').select('location_id, name, lat, lng').in('brand_id', brandIds).eq('location_type','branch').not('lat','is',null);
+
+  if (!myLocs?.length) { resultEl.innerHTML = '<div class="empty-state">Şubelerin koordinatı yok — Google Maps\'ten veri çekin</div>'; btn.disabled=false; btn.textContent='🔍 Yakın Şubeleri Bul'; return; }
+
+  // System settings'ten gmaps URL'yi al
+  const { data: settings } = await sb.from('system_settings').select('key,value');
+  const m = {}; (settings||[]).forEach(r => m[r.key]=r.value);
+  const gmapsUrl  = m['gmaps_url'] || '';
+  const appSecret = m['app_secret'] || '';
+
+  if (!gmapsUrl || !appSecret) {
+    resultEl.innerHTML = '<div class="empty-state">⚠ Google Maps connector URL tanımlı değil — Ayarlar sayfasını kontrol edin</div>';
+    btn.disabled=false; btn.textContent='🔍 Yakın Şubeleri Bul'; return;
+  }
+
+  // Her şube için yakındaki rakipleri ara
+  const discovered = [];
+  const seenPlaceIds = new Set();
+
+  for (const loc of myLocs) {
+    try {
+      const resp = await fetch(
+        `${gmapsUrl.replace(/\/$/,'')}/search?q=${encodeURIComponent(name)}&lat=${loc.lat}&lng=${loc.lng}&radius=${radius}&secret=${encodeURIComponent(appSecret)}`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      for (const r of (data.results||[])) {
+        if (!r.place_id || seenPlaceIds.has(r.place_id)) continue;
+        seenPlaceIds.add(r.place_id);
+        // Müşteri şubesine mesafeyi hesapla
+        const dist = haversine(loc.lat, loc.lng, r.lat||0, r.lng||0);
+        if (dist <= radius/1000) {
+          discovered.push({ ...r, nearLoc: loc.name, dist: Math.round(dist*1000) });
+        }
+      }
+    } catch(e) { continue; }
+  }
+
+  if (!discovered.length) {
+    resultEl.innerHTML = `<div class="empty-state">📍 ${radius}m içinde "${name}" şubesi bulunamadı. Yarıçapı artırmayı deneyin.</div>`;
+    btn.disabled=false; btn.textContent='🔍 Yakın Şubeleri Bul'; return;
+  }
+
+  // Sonuçları göster — seçim yapılabilir
+  resultEl.innerHTML = `
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin-bottom:10px">
+      ${discovered.length} şube bulundu — eklenecekleri seçin
+    </div>
+    ${discovered.map((r,i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;background:var(--raised)">
+        <input type="checkbox" id="comp-cb-${i}" checked style="width:16px;height:16px;cursor:pointer">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">${r.name}</div>
+          <div style="font-size:11px;color:var(--dim)">${r.address||'—'} · ${r.dist}m (${r.nearLoc}'a yakın)</div>
+          ${r.rating ? `<div style="font-size:11px;color:var(--amber)">★ ${r.rating}</div>` : ''}
+        </div>
+      </div>
+    `).join('')}
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveDiscoveredCompetitors(${JSON.stringify(discovered).replace(/"/g,'&quot;')})">
+      ✓ Seçilenleri Rakip Olarak Ekle
+    </button>
+  `;
+  btn.disabled=false; btn.textContent='🔍 Yeniden Ara';
+}
+
+async function saveDiscoveredCompetitors(discovered) {
+  if (!currentCustomer) return;
+  const name = document.getElementById('comp-name').value.trim();
+
+  // Seçili olanları filtrele
+  const selected = discovered.filter((_,i) => document.getElementById(`comp-cb-${i}`)?.checked);
+  if (!selected.length) { toast('En az bir şube seçin', 'error'); return; }
+
+  // Sistemde bu isimde marka var mı?
+  const { data: existing } = await sb.from('brands').select('brand_id, name, customer_id').ilike('name', name).limit(1);
 
   let brandId;
-
   if (existing?.length && existing[0].customer_id !== currentCustomer.customer_id) {
-    // Başka bir müşteriye ait marka — direkt bağla
     brandId = existing[0].brand_id;
-    toast(`"${existing[0].name}" markası sistemde bulundu — bağlandı`, 'info');
+    toast(`"${existing[0].name}" sistemde bulundu — bağlandı`, 'info');
   } else {
-    // Phantom marka oluştur
     const { data: newBrand, error } = await sb.from('brands').insert({
-      name,
-      is_phantom:       true,
-      sector_template:  sector,
-      monitoring_modes: ['location'],
+      name, is_phantom: true, monitoring_modes: ['location'],
     }).select().single();
     if (error) { toast('Marka oluşturulamadı: ' + error.message, 'error'); return; }
     brandId = newBrand.brand_id;
+  }
 
-    // Place ID'leri varsa lokasyon olarak ekle
-    for (const pid of placeIds) {
-      await sb.from('locations').insert({
-        brand_id:        brandId,
-        name:            `${name} Şube`,
-        google_place_id: pid,
-        location_type:   'branch',
-      });
+  // Seçili şubeleri lokasyon olarak ekle
+  let added = 0;
+  for (const r of selected) {
+    const { data: connectors } = await sb.from('connectors').select('connector_id, key');
+    const gmapsConn = (connectors||[]).find(c=>c.key==='google_maps');
+
+    const { data: loc } = await sb.from('locations').insert({
+      brand_id: brandId, name: r.name, address: r.address||null,
+      google_place_id: r.place_id, location_type: 'branch',
+      lat: r.lat||null, lng: r.lng||null,
+    }).select().single();
+
+    if (loc && gmapsConn) {
+      await sb.from('location_connectors').upsert({
+        location_id: loc.location_id, connector_id: gmapsConn.connector_id,
+        enabled: true, external_id: r.place_id,
+      }, { onConflict: 'location_id,connector_id' });
     }
+    added++;
   }
 
   // Rakip ilişkisini kur
-  const { error: ce } = await sb.from('competitor_brands').insert({
-    customer_id: currentCustomer.customer_id,
-    brand_id:    brandId,
-  });
+  await sb.from('competitor_brands').upsert({
+    customer_id: currentCustomer.customer_id, brand_id: brandId,
+  }, { onConflict: 'customer_id,brand_id' });
 
-  if (ce) { toast('Hata: ' + ce.message, 'error'); return; }
-
-  toast(`✓ ${name} rakip olarak eklendi`, 'success');
+  toast(`✓ ${name} — ${added} şube eklendi`, 'success');
   closeModal('modal-new-competitor');
   document.getElementById('comp-name').value = '';
-  document.getElementById('comp-place-ids').value = '';
+  document.getElementById('comp-discover-result').style.display = 'none';
   loadCompetitors(currentCustomer.customer_id);
 }
 
-async function deleteCompetitor(id, customerId) {
-  if (!confirm('Bu rakibi kaldırmak istiyor musunuz?')) return;
-  await sb.from('competitor_brands').delete().eq('id', id);
-  toast('Rakip kaldırıldı', 'success');
-  loadCompetitors(customerId);
-}
-
-function openCompetitorLocWizard(brandId, brandName) {
-  const wizUrl = `location_wizard.html?brand_id=${brandId}&brand_name=${encodeURIComponent(brandName)}&return=${encodeURIComponent(window.location.href)}`;
-  window.open(wizUrl, '_blank', 'width=740,height=800,scrollbars=yes');
+// Haversine (km)
+function haversine(lat1, lng1, lat2, lng2) {
+  const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
 // ── LOKASYONLAR ──────────────────────────────────────────────
