@@ -152,6 +152,7 @@ select option{background:var(--raised)}
     <div class="nav-section">Yönetim</div>
     <div class="nav-item active" data-page="customers" onclick="navigate('customers')">⬡ Müşteriler</div>
     <div class="nav-section">Sistem</div>
+    <div class="nav-item" data-page="competitors" onclick="navigate('competitors')">⬡ Rakip Markalar</div>
     <div class="nav-item" data-page="cost" onclick="navigate('cost')">⬡ Maliyet</div>
     <div class="nav-item" data-page="settings" onclick="navigate('settings')">⬡ Ayarlar</div>
   </div>
@@ -251,22 +252,6 @@ select option{background:var(--raised)}
           </div>
         </div>
 
-        <!-- Rakip Markalar -->
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-header">
-            <span class="card-title">Rakip Markalar</span>
-            <button class="btn btn-primary btn-sm" onclick="openModal('modal-new-competitor')">+ Rakip Ekle</button>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Marka</th><th>Tip</th><th>Lokasyon Sayısı</th><th>İşlemler</th></tr></thead>
-              <tbody id="competitors-tbody">
-                <tr><td colspan="4"><div class="empty-state">Henüz rakip tanımlı değil</div></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
         <!-- Kullanıcılar -->
         <div class="card" style="margin-bottom:20px">
           <div class="card-header">
@@ -313,6 +298,33 @@ select option{background:var(--raised)}
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- RAKİP MARKALAR -->
+  <div id="page-competitors" class="page">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Rakip Markalar</div>
+        <div class="topbar-sub">Global rakip listesi — tüm müşteriler için</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('modal-new-competitor')">+ Rakip Ekle</button>
+    </div>
+    <div class="content">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Tanımlı Rakipler</span>
+          <span style="font-size:11px;color:var(--dim)">Müşteriler kendi panellerinden seçerek karşılaştırma yapabilir</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Marka</th><th>Sektör</th><th>Oluşturulma</th><th>İşlemler</th></tr></thead>
+            <tbody id="global-competitors-tbody">
+              <tr><td colspan="4"><div class="empty-state"><span class="spinner"></span></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -423,27 +435,27 @@ select option{background:var(--raised)}
     </div>
     <div class="modal-body">
       <div class="form-hint" style="padding:12px;background:var(--raised);border-radius:var(--r);margin-bottom:16px">
-        💡 Marka adını girin. Sistem, müşterinin şubelerine yakın (<strong>500m</strong>) bu markaya ait şubeleri otomatik bulur ve ekler.
+        💡 Sadece marka adını girin. Müşteriler kendi panellerinden şubelerine yakın bu markaları karşılaştırabilecek.
       </div>
       <div class="form-group">
         <label>Rakip Marka Adı</label>
-        <input id="comp-name" type="text" placeholder="örn: Zara, Mango, H&M" onkeydown="if(event.key==='Enter')discoverCompetitor()">
+        <input id="comp-name" type="text" placeholder="örn: Zara, Mango, H&M">
       </div>
       <div class="form-group">
-        <label>Arama Yarıçapı</label>
-        <select id="comp-radius">
-          <option value="500">500m (yakın şubeler)</option>
-          <option value="1000">1km</option>
-          <option value="2000">2km</option>
-          <option value="5000">5km</option>
+        <label>Sektör (opsiyonel)</label>
+        <select id="comp-sector">
+          <option value="retail">Perakende</option>
+          <option value="restaurant">Restoran/Kafe</option>
+          <option value="health">Sağlık</option>
+          <option value="hotel">Otel</option>
+          <option value="ecommerce">E-ticaret</option>
+          <option value="custom">Diğer</option>
         </select>
       </div>
-      <!-- Keşif sonuçları -->
-      <div id="comp-discover-result" style="display:none;margin-top:12px"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-competitor')">İptal</button>
-      <button class="btn btn-primary" onclick="discoverCompetitor()" id="btn-discover">🔍 Yakın Şubeleri Bul</button>
+      <button class="btn btn-primary" onclick="createGlobalCompetitor()">Ekle</button>
     </div>
   </div>
 </div>
@@ -550,6 +562,7 @@ function navigate(page) {
   document.getElementById('page-' + page).classList.add('active');
   const ni = document.querySelector(`[data-page="${page}"]`);
   if (ni) ni.classList.add('active');
+  if (page === 'competitors') loadGlobalCompetitors();
   if (page === 'cost')     loadCostPage();
   if (page === 'settings') { loadSettingsPage(); loadSystemSettings(); }
 }
@@ -782,6 +795,67 @@ function openLocationWizard() {
       toast(`${e.data.count} lokasyon eklendi ✓`, 'success');
     }
   }, { once: true });
+}
+
+// ── GLOBAL RAKİP MARKALAR ────────────────────────────────
+async function loadGlobalCompetitors() {
+  const tbody = document.getElementById('global-competitors-tbody');
+  const { data } = await sb.from('brands')
+    .select('brand_id, name, sector_template, created_at')
+    .eq('is_phantom', true)
+    .order('created_at', { ascending: false });
+
+  if (!data?.length) {
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">Henüz rakip marka yok</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(b => `
+    <tr>
+      <td><strong>${b.name}</strong></td>
+      <td style="color:var(--dim)">${b.sector_template||'—'}</td>
+      <td style="color:var(--dim)">${fdate(b.created_at)}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteGlobalCompetitor('${b.brand_id}')">Sil</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function createGlobalCompetitor() {
+  const name   = document.getElementById('comp-name').value.trim();
+  const sector = document.getElementById('comp-sector').value;
+  if (!name) { toast('Marka adı zorunlu', 'error'); return; }
+
+  // Aynı isimde zaten var mı?
+  const { data: existing } = await sb.from('brands')
+    .select('brand_id').ilike('name', name).eq('is_phantom', true).limit(1);
+  if (existing?.length) { toast(`"${name}" zaten mevcut`, 'info'); closeModal('modal-new-competitor'); return; }
+
+  const { error } = await sb.from('brands').insert({
+    name,
+    is_phantom:      true,
+    sector_template: sector,
+    monitoring_modes: ['location'],
+    // customer_id NULL — global rakip
+  });
+
+  if (error) { toast('Hata: ' + error.message, 'error'); return; }
+  toast(`✓ "${name}" rakip olarak eklendi`, 'success');
+  closeModal('modal-new-competitor');
+  document.getElementById('comp-name').value = '';
+  loadGlobalCompetitors();
+}
+
+async function deleteGlobalCompetitor(brandId) {
+  if (!confirm('Bu rakip markayı silmek istediğine emin misin?')) return;
+  // Önce competitor_brands bağlantılarını temizle
+  await sb.from('competitor_brands').delete().eq('brand_id', brandId);
+  // Lokasyonları sil
+  await sb.from('locations').delete().eq('brand_id', brandId);
+  // Markayı sil
+  await sb.from('brands').delete().eq('brand_id', brandId);
+  toast('Rakip silindi', 'success');
+  loadGlobalCompetitors();
 }
 
 // ── RAKİP MARKALAR ───────────────────────────────────────
