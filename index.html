@@ -275,7 +275,7 @@ select option{background:var(--raised)}
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>E-posta</th><th>Ad</th><th>Rol</th><th>İşlemler</th></tr></thead>
+              <thead><tr><th>E-posta</th><th>Ad</th><th>Rol</th><th>Marka Erişimi</th><th>İşlemler</th></tr></thead>
               <tbody id="users-tbody">
                 <tr><td colspan="4"><div class="empty-state">Henüz kullanıcı yok</div></td></tr>
               </tbody>
@@ -565,8 +565,12 @@ select option{background:var(--raised)}
           <option value="viewer">İzleyici (Viewer) — Sadece dashboard ve alertleri görür</option>
         </select>
       </div>
-      <div class="form-hint" style="padding:12px;background:var(--raised);border-radius:var(--r);margin-top:4px">
-        ⚠️ Kullanıcının Supabase'de hesabı olması gerekiyor. Supabase → Authentication → Invite User ile davet edin, sonra buradan kaydedin.
+      <div class="form-group">
+        <label>Marka Erişimi</label>
+        <select id="nu-brand" style="margin-bottom:6px">
+          <option value="">Tüm markalar (varsayılan)</option>
+        </select>
+        <div class="form-hint" style="font-size:11px;color:var(--muted)">Boş bırakılırsa müşterinin tüm markalarına erişir.</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -758,26 +762,33 @@ async function loadUsers(customerId) {
   const tbody = document.getElementById('users-tbody');
   document.getElementById('det-users').textContent = (data||[]).length;
   if (!data?.length) {
-    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">Henüz kullanıcı yok — + Kullanıcı Ekle</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Henüz kullanıcı yok — + Kullanıcı Ekle</div></td></tr>';
     return;
   }
-  tbody.innerHTML = data.map(u => `
+  tbody.innerHTML = data.map(u => {
+    const brandAccess = u.brand_ids?.length
+      ? (u.brand_ids.map(id => allBrands.find(b => b.brand_id === id)?.name || id).join(', '))
+      : '<span style="color:var(--muted)">Tüm markalar</span>';
+    return `
     <tr>
       <td>${u.email}</td>
       <td>${u.name}</td>
       <td><span class="badge badge-${u.role === 'manager' ? 'saas_full' : 'consulting'}">${u.role === 'manager' ? 'Yönetici' : u.role === 'viewer' ? 'İzleyici' : u.role}</span></td>
+      <td style="font-size:12px">${brandAccess}</td>
       <td>
         <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.user_id}')">Sil</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 async function createUser() {
   if (!currentCustomer) return;
-  const email = document.getElementById('nu-email').value.trim();
-  const name  = document.getElementById('nu-name').value.trim();
-  const role  = document.getElementById('nu-role').value;
+  const email      = document.getElementById('nu-email').value.trim();
+  const name       = document.getElementById('nu-name').value.trim();
+  const role       = document.getElementById('nu-role').value;
+  const brandSelVal = document.getElementById('nu-brand').value;
+  const brand_ids  = brandSelVal ? [brandSelVal] : null;  // null = tüm markalar
   if (!email || !name) { toast('E-posta ve ad zorunlu', 'error'); return; }
 
   const analysisUrl = ANALYSIS_URL;
@@ -802,6 +813,7 @@ async function createUser() {
         role,
         customer_id:  currentCustomer.customer_id,
         redirect_url: CUSTOMER_PANEL,
+        brand_ids,
       }),
     });
     const data = await resp.json();
@@ -892,6 +904,13 @@ async function loadBrands(customerId) {
       </td>
     </tr>
   `).join('');
+
+  // Kullanıcı modalındaki marka seçimini doldur
+  const nuBrand = document.getElementById('nu-brand');
+  if (nuBrand) {
+    nuBrand.innerHTML = '<option value="">Tüm markalar (varsayılan)</option>' +
+      rows.map(b => `<option value="${b.brand_id}">${b.name}</option>`).join('');
+  }
 }
 
 async function createBrand() {
