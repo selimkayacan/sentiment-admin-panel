@@ -53,11 +53,13 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-
 
 /* ADDED LIST */
 .added-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
-.added-item{background:var(--raised);border:1px solid var(--green);border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;gap:10px}
-.added-item-name{flex:1;font-size:13px;font-weight:600}
-.added-item-addr{font-size:11px;color:var(--dim)}
-.added-item-type{font-size:10px;background:var(--muted);color:var(--bg);padding:2px 6px;border-radius:4px}
-.added-item-rm{background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;line-height:1}
+.added-item{background:var(--raised);border:1px solid var(--green);border-radius:var(--r);padding:10px 14px;gap:10px}
+.added-item-top{display:flex;align-items:center;gap:10px}
+.added-item-name-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:13px;font-weight:600;padding:6px 10px;outline:none;transition:border-color .15s}
+.added-item-name-input:focus{border-color:var(--accent)}
+.added-item-addr{font-size:11px;color:var(--muted);margin-top:4px;padding-left:32px}
+.added-item-type{font-size:10px;background:var(--muted);color:var(--bg);padding:2px 6px;border-radius:4px;white-space:nowrap}
+.added-item-rm{background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;line-height:1;flex-shrink:0}
 
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:none;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;transition:all .15s}
@@ -281,7 +283,7 @@ function toggleSearchResult(i, name, address, placeId, lat, lng) {
     addedLocations.splice(existing, 1);
     document.getElementById('sri-' + i)?.classList.remove('selected');
   } else {
-    addedLocations.push({ name, address, placeId, type: 'branch', lat, lng });
+    addedLocations.push({ name, customName: name, address, placeId, type: 'branch', lat, lng });
     document.getElementById('sri-' + i)?.classList.add('selected');
   }
   renderAdded();
@@ -313,15 +315,15 @@ async function processBulk() {
       if (results.length) {
         const r = results[0];
         if (!addedLocations.find(l => l.placeId === r.place_id)) {
-          addedLocations.push({ name: r.name, address: r.address, placeId: r.place_id, type: 'branch', lat: r.lat, lng: r.lng });
+          addedLocations.push({ name: r.name, customName: r.name, address: r.address, placeId: r.place_id, type: 'branch', lat: r.lat, lng: r.lng });
           found++;
         }
       } else {
-        addedLocations.push({ name: q, address: '', placeId: '', type: 'branch', lat: 0, lng: 0 });
+        addedLocations.push({ name: q, customName: q, address: '', placeId: '', type: 'branch', lat: 0, lng: 0 });
         found++;
       }
     } else {
-      addedLocations.push({ name: q, address: '', placeId: '', type: 'branch', lat: 0, lng: 0 });
+      addedLocations.push({ name: q, customName: q, address: '', placeId: '', type: 'branch', lat: 0, lng: 0 });
       found++;
     }
     done++;
@@ -362,13 +364,13 @@ async function processCSV() {
         const results = await searchGoogleMaps(`${name} ${city}`);
         const r = results[0];
         addedLocations.push(r
-          ? { name: r.name, address: r.address, placeId: r.place_id, type: 'branch', lat: r.lat, lng: r.lng }
-          : { name, address, placeId: '', type: 'branch', lat: 0, lng: 0 }
+          ? { name: r.name, customName: r.name, address: r.address, placeId: r.place_id, type: 'branch', lat: r.lat, lng: r.lng }
+          : { name, customName: name, address, placeId: '', type: 'branch', lat: 0, lng: 0 }
         );
         added++;
         await new Promise(r => setTimeout(r, 200));
       } else {
-        addedLocations.push({ name, address, placeId: '', type: 'branch', lat: 0, lng: 0 });
+        addedLocations.push({ name, customName: name, address, placeId: '', type: 'branch', lat: 0, lng: 0 });
         added++;
       }
     }
@@ -383,7 +385,7 @@ async function processCSV() {
 function addGeneralLocation() {
   const name = document.getElementById('general-name').value.trim();
   if (!name) return;
-  addedLocations.push({ name, address: 'Dijital İzleme', placeId: '', type: 'general', lat: 0, lng: 0 });
+  addedLocations.push({ name, customName: name, address: 'Dijital İzleme', placeId: '', type: 'general', lat: 0, lng: 0 });
   document.getElementById('general-name').value = '';
   renderAdded();
 }
@@ -398,14 +400,20 @@ function renderAdded() {
 
   document.getElementById('added-list').innerHTML = addedLocations.map((l, i) => `
     <div class="added-item">
-      <span style="font-size:18px">${l.type === 'general' ? '🌐' : '📍'}</span>
-      <div style="flex:1">
-        <div class="added-item-name">${l.name}</div>
-        <div class="added-item-addr">${l.address || (l.placeId ? `Place ID: ${l.placeId.slice(0,20)}...` : 'Adres girilmedi')}</div>
+      <div class="added-item-top">
+        <span style="font-size:18px;flex-shrink:0">${l.type === 'general' ? '🌐' : '📍'}</span>
+        <input class="added-item-name-input"
+               value="${esc(l.customName || l.name)}"
+               placeholder="Şube adı girin"
+               oninput="updateCustomName(${i}, this.value)"
+               title="Dashboardda görünecek ad">
+        <span class="added-item-type">${l.type === 'general' ? 'Genel' : 'Şube'}</span>
+        ${l.placeId ? '<span style="font-size:10px;color:var(--green)">✓ Maps</span>' : '<span style="font-size:10px;color:var(--amber)">! ID yok</span>'}
+        <button class="added-item-rm" onclick="removeAdded(${i})">×</button>
       </div>
-      <span class="added-item-type">${l.type === 'general' ? 'Genel' : 'Şube'}</span>
-      ${l.placeId ? '<span style="font-size:10px;color:var(--green);margin-left:6px">✓ Place ID</span>' : '<span style="font-size:10px;color:var(--amber);margin-left:6px">! ID yok</span>'}
-      <button class="added-item-rm" onclick="removeAdded(${i})">×</button>
+      <div class="added-item-addr">
+        ${l.name !== (l.customName || l.name) ? `<span style="color:var(--muted)">Google adı: ${l.name} · </span>` : ''}${l.address || (l.placeId ? '' : 'Adres girilmedi')}
+      </div>
     </div>
   `).join('');
 }
@@ -413,6 +421,10 @@ function renderAdded() {
 function removeAdded(i) {
   addedLocations.splice(i, 1);
   renderAdded();
+}
+
+function updateCustomName(i, val) {
+  addedLocations[i].customName = val.trim() || addedLocations[i].name;
 }
 
 // ── KAYDET ────────────────────────────────────────────────
@@ -432,7 +444,7 @@ async function saveAll() {
     for (const loc of addedLocations) {
       const { data: newLoc, error } = await sb.from('locations').insert({
         brand_id:        brandId,
-        name:            loc.name,
+        name:            loc.customName || loc.name,
         address:         loc.address || null,
         google_place_id: loc.placeId || null,
         lat:             loc.lat || null,
