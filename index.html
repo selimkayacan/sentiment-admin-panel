@@ -156,8 +156,36 @@ select option{background:var(--raised)}
     <div class="nav-item" data-page="cost" onclick="navigate('cost')">⬡ Maliyet</div>
     <div class="nav-item" data-page="settings" onclick="navigate('settings')">⬡ Ayarlar</div>
   </div>
-  <div class="sidebar-footer">v2.0 — Sadeleştirilmiş</div>
+  <div class="sidebar-footer">
+    <div id="admin-user-email" style="margin-bottom:8px;font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+    <button onclick="adminLogout()" style="background:none;border:1px solid var(--border);color:var(--dim);border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit;width:100%">Çıkış Yap</button>
+  </div>
 </nav>
+
+<!-- LOGIN SCREEN -->
+<div id="admin-login" style="position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:360px">
+    <div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:24px">SENTIMENT PLATFORM</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px">Admin Girişi</div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:28px">Sadece yetkili admin hesapları erişebilir</div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:6px">E-posta</label>
+      <input id="admin-email" type="email" placeholder="admin@example.com"
+        style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none"
+        onkeydown="if(event.key==='Enter')adminLogin()">
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:6px">Şifre</label>
+      <input id="admin-password" type="password" placeholder="••••••••"
+        style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none"
+        onkeydown="if(event.key==='Enter')adminLogin()">
+    </div>
+    <button onclick="adminLogin()" style="width:100%;background:var(--accent);color:#000;border:none;border-radius:6px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">
+      Giriş Yap
+    </button>
+    <div id="admin-login-error" style="margin-top:12px;font-size:12px;color:var(--red);text-align:center;display:none"></div>
+  </div>
+</div>
 
 <!-- MAIN -->
 <main class="main">
@@ -1501,10 +1529,56 @@ async function reconnect() {
   }
 }
 
-// ── BOOT ─────────────────────────────────────────────────────
-(function boot() {
-  initSB();
+// ── AUTH ─────────────────────────────────────────────────────
+async function adminLogin() {
+  const email = document.getElementById('admin-email').value.trim();
+  const pass  = document.getElementById('admin-password').value;
+  const errEl = document.getElementById('admin-login-error');
+  errEl.style.display = 'none';
+
+  if (!email || !pass) { errEl.textContent = 'Email ve şifre zorunlu'; errEl.style.display = 'block'; return; }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { errEl.textContent = 'Giriş hatası: ' + error.message; errEl.style.display = 'block'; return; }
+
+  // is_admin kontrolü
+  const { data: usr } = await sb.from('users').select('is_admin, name').eq('user_id', data.user.id).maybeSingle();
+  if (!usr?.is_admin) {
+    await sb.auth.signOut();
+    errEl.textContent = 'Bu hesabın admin yetkisi yok.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  document.getElementById('admin-login').style.display = 'none';
+  document.getElementById('admin-user-email').textContent = email;
   loadAll();
+}
+
+async function adminLogout() {
+  await sb.auth.signOut();
+  document.getElementById('admin-login').style.display = 'flex';
+  document.getElementById('admin-email').value = '';
+  document.getElementById('admin-password').value = '';
+}
+
+// ── BOOT ─────────────────────────────────────────────────────
+(async function boot() {
+  initSB();
+  // Mevcut session var mı kontrol et
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    const { data: usr } = await sb.from('users').select('is_admin').eq('user_id', session.user.id).maybeSingle();
+    if (usr?.is_admin) {
+      document.getElementById('admin-login').style.display = 'none';
+      document.getElementById('admin-user-email').textContent = session.user.email;
+      loadAll();
+      return;
+    }
+    await sb.auth.signOut();
+  }
+  // Login ekranını göster
+  document.getElementById('admin-login').style.display = 'flex';
 })();
 </script>
 </body>
