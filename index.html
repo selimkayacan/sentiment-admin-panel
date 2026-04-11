@@ -557,6 +557,50 @@ select option{background:var(--raised)}
   </div>
 </div>
 
+<!-- MODAL: Marka Kullanıcıları -->
+<div class="modal-overlay" id="modal-brand-users">
+  <div class="modal" style="width:560px">
+    <div class="modal-header">
+      <div class="modal-title">👥 <span id="brand-users-title">Marka</span> — Kullanıcılar</div>
+      <button class="modal-close" onclick="closeModal('modal-brand-users')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Mevcut kullanıcılar -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin-bottom:10px">Bu Markaya Erişimi Olanlar</div>
+        <div id="brand-users-list" style="display:flex;flex-direction:column;gap:8px">
+          <div class="empty-state">Yükleniyor...</div>
+        </div>
+      </div>
+
+      <!-- Kullanıcı ekle -->
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin-bottom:12px">Bu Markaya Kullanıcı Ekle</div>
+        <div class="form-group">
+          <label>E-posta</label>
+          <input id="bu-email" type="email" placeholder="kullanici@firma.com">
+        </div>
+        <div class="form-group">
+          <label>Ad Soyad</label>
+          <input id="bu-name" type="text" placeholder="Ahmet Yılmaz">
+          <div class="form-hint">Kullanıcı zaten sistemde kayıtlıysa ad güncellenmez, sadece bu markaya erişim eklenir.</div>
+        </div>
+        <div class="form-group">
+          <label>Rol</label>
+          <select id="bu-role">
+            <option value="manager">Yönetici — Kurulum yapabilir, veri çekebilir</option>
+            <option value="viewer">İzleyici — Sadece dashboard görür</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-brand-users')">Kapat</button>
+      <button class="btn btn-primary" onclick="addUserToBrand()">+ Ekle / Davet Gönder</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Yeni Kullanıcı -->
 <div class="modal-overlay" id="modal-new-user">
   <div class="modal">
@@ -582,10 +626,10 @@ select option{background:var(--raised)}
       </div>
       <div class="form-group">
         <label>Marka Erişimi</label>
-        <select id="nu-brand" style="margin-bottom:6px">
-          <option value="">Tüm markalar (varsayılan)</option>
-        </select>
-        <div class="form-hint" style="font-size:11px;color:var(--muted)">Boş bırakılırsa müşterinin tüm markalarına erişir.</div>
+        <div id="nu-brand-list" style="background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:10px;max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:12px;color:var(--muted)">Yükleniyor...</div>
+        </div>
+        <div class="form-hint" style="font-size:11px;color:var(--muted);margin-top:6px">Hiçbiri seçilmezse tüm markalara erişir. Birden fazla seçilebilir.</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -892,7 +936,122 @@ function openLocationWizardForBrand(brandId, brandName) {
   }, { once: true });
 }
 
-// ── MARKALAR ─────────────────────────────────────────────────
+// ── MARKA KULLANICI YÖNETİMİ ─────────────────────────────────
+let _currentBrandUsersId = null;
+
+async function openBrandUsers(brandId, brandName) {
+  _currentBrandUsersId = brandId;
+  document.getElementById('brand-users-title').textContent = brandName;
+  document.getElementById('bu-email').value = '';
+  document.getElementById('bu-name').value = '';
+  openModal('modal-brand-users');
+  await loadBrandUsers(brandId);
+}
+
+async function loadBrandUsers(brandId) {
+  const el = document.getElementById('brand-users-list');
+  // Bu markaya erişimi olan kullanıcıları bul
+  // brand_ids array'inde bu brand_id geçenler VEYA brand_ids null olanlar (tüm markalara erişimi var)
+  const { data: allUsers } = await sb.from('users')
+    .select('user_id, email, name, role, brand_ids')
+    .eq('customer_id', currentCustomer.customer_id);
+
+  const brandUsers = (allUsers || []).filter(u =>
+    u.brand_ids === null || (Array.isArray(u.brand_ids) && u.brand_ids.includes(brandId))
+  );
+
+  if (!brandUsers.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:12px">Henüz kullanıcı yok</div>';
+    return;
+  }
+
+  el.innerHTML = brandUsers.map(u => {
+    const isAllBrands = u.brand_ids === null;
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--raised);border-radius:var(--r);border:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:600">${u.email}</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:2px">
+            ${u.name || '—'} · 
+            <span class="badge badge-${u.role === 'manager' ? 'saas_full' : 'consulting'}">${u.role === 'manager' ? 'Yönetici' : 'İzleyici'}</span>
+            ${isAllBrands ? '<span style="margin-left:6px;font-size:10px;color:var(--amber)">Tüm markalara erişiyor</span>' : ''}
+          </div>
+        </div>
+        ${!isAllBrands ? `<button class="btn btn-danger btn-sm" onclick="removeUserFromBrand('${u.user_id}','${brandId}')">Erişimi Kaldır</button>` : ''}
+      </div>`;
+  }).join('');
+}
+
+async function addUserToBrand() {
+  if (!_currentBrandUsersId || !currentCustomer) return;
+  const email = document.getElementById('bu-email').value.trim();
+  const name  = document.getElementById('bu-name').value.trim();
+  const role  = document.getElementById('bu-role').value;
+  if (!email) { toast('E-posta zorunlu', 'error'); return; }
+
+  const btn = document.querySelector('#modal-brand-users .btn-primary');
+  btn.disabled = true; btn.textContent = '⏳ İşleniyor...';
+
+  try {
+    // Kullanıcı sistemde var mı?
+    const { data: existingUser } = await sb.from('users')
+      .select('user_id, brand_ids, name')
+      .eq('customer_id', currentCustomer.customer_id)
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingUser) {
+      // Kullanıcı var — brand_ids'e bu markayı ekle
+      let brandIds = existingUser.brand_ids || [];
+      if (!brandIds.includes(_currentBrandUsersId)) {
+        brandIds = [...brandIds, _currentBrandUsersId];
+        await sb.from('users').update({ brand_ids: brandIds }).eq('user_id', existingUser.user_id);
+        toast(`✓ ${email} kullanıcısına bu marka eklendi`, 'success');
+      } else {
+        toast(`${email} zaten bu markaya erişiyor`, 'info');
+      }
+      await loadBrandUsers(_currentBrandUsersId);
+    } else {
+      // Yeni kullanıcı — davet gönder
+      if (!name) { toast('Yeni kullanıcı için ad soyad zorunlu', 'error'); btn.disabled=false; btn.textContent='+ Ekle / Davet Gönder'; return; }
+      const resp = await fetch(`${ANALYSIS_URL.replace(/\/$/,'')}/invite-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-App-Secret': APP_SECRET_VAL },
+        body: JSON.stringify({
+          email, name, role,
+          customer_id:  currentCustomer.customer_id,
+          redirect_url: CUSTOMER_PANEL,
+          brand_ids:    [_currentBrandUsersId],
+        }),
+      });
+      const data = await resp.json();
+      if (data.status === 'ok' || data.status === 'exists') {
+        toast(`✓ ${email} davet gönderildi`, 'success');
+        await loadBrandUsers(_currentBrandUsersId);
+      } else {
+        throw new Error(data.error || 'Hata');
+      }
+    }
+  } catch(e) {
+    toast('Hata: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '+ Ekle / Davet Gönder';
+    document.getElementById('bu-email').value = '';
+    document.getElementById('bu-name').value = '';
+  }
+}
+
+async function removeUserFromBrand(userId, brandId) {
+  if (!confirm('Bu kullanıcının bu markaya erişimini kaldırmak istediğine emin misin?')) return;
+  const { data: user } = await sb.from('users').select('brand_ids').eq('user_id', userId).maybeSingle();
+  if (!user) return;
+  const newBrandIds = (user.brand_ids || []).filter(id => id !== brandId);
+  await sb.from('users').update({ brand_ids: newBrandIds.length ? newBrandIds : null }).eq('user_id', userId);
+  toast('Erişim kaldırıldı', 'success');
+  loadBrandUsers(brandId);
+}
+
+
 async function loadBrands(customerId) {
   const tbody = document.getElementById('brands-tbody');
   if (!tbody) return;
@@ -929,6 +1088,7 @@ async function loadBrands(customerId) {
       <td style="color:var(--dim)">${b.locCount} şube</td>
       <td>
         <button class="btn btn-ghost btn-sm" onclick="openLocationWizardForBrand('${b.brand_id}','${b.name.replace(/'/g,"\\'")}')">+ Şube</button>
+        <button class="btn btn-ghost btn-sm" onclick="openBrandUsers('${b.brand_id}','${b.name.replace(/'/g,"\\'")}')">👥 Kullanıcılar</button>
         <button class="btn btn-ghost btn-sm" onclick="changeBrandMode('${b.brand_id}','${b.name.replace(/'/g,"\\'")}')">Paket</button>
         <button class="btn btn-danger btn-sm" onclick="deleteBrand('${b.brand_id}')">Sil</button>
       </td>
