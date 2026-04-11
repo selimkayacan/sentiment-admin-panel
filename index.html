@@ -252,52 +252,96 @@ select option{background:var(--raised)}
           </div>
         </div>
 
-        <!-- Lokasyonlar — Marka Bazlı -->
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-header">
-            <span class="card-title">Lokasyonlar / Şubeler</span>
-            <span style="font-size:11px;color:var(--dim)">Marka seçerek şubelerini yönetin</span>
+        <!-- Marka Detay Paneli — marka seçilince dolur -->
+        <div class="card" id="brand-detail-section" style="margin-bottom:20px;display:none">
+          <div class="card-header" style="background:var(--raised)">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:16px">📌</span>
+              <div>
+                <div style="font-size:14px;font-weight:700;color:var(--accent)" id="selected-brand-name">—</div>
+                <div style="font-size:11px;color:var(--dim)">Seçili marka</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="clearBrandSelection()">✕ Seçimi Kaldır</button>
           </div>
-          <div id="locations-by-brand">
-            <div class="empty-state">Markalar yükleniyor...</div>
+
+          <!-- Şubeler -->
+          <div style="border-bottom:1px solid var(--border)">
+            <div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)">📍 Şubeler</span>
+              <button class="btn btn-ghost btn-sm" id="btn-add-loc" onclick="">+ Şube Ekle</button>
+            </div>
+            <div id="brand-locations-body" style="padding:0 20px 14px">
+              <div class="empty-state">Yükleniyor...</div>
+            </div>
+          </div>
+
+          <!-- Kullanıcılar -->
+          <div style="border-bottom:1px solid var(--border)">
+            <div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)">👥 Kullanıcılar</span>
+              <button class="btn btn-ghost btn-sm" onclick="showBrandAddUserForm()">+ Kullanıcı Ekle</button>
+            </div>
+            <div id="brand-users-body" style="padding:0 20px 14px">
+              <div class="empty-state">Yükleniyor...</div>
+            </div>
+            <div id="brand-add-user-form" style="display:none;padding:14px 20px;border-top:1px solid var(--border);background:var(--raised)">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+                <div>
+                  <label style="display:block;font-size:11px;color:var(--dim);margin-bottom:4px">E-posta</label>
+                  <input id="bau-email" type="email" placeholder="kullanici@firma.com" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px;outline:none">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;color:var(--dim);margin-bottom:4px">Ad Soyad</label>
+                  <input id="bau-name" type="text" placeholder="Ahmet Yılmaz" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px;outline:none">
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <select id="bau-role" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:inherit;font-size:12px;padding:7px 10px;outline:none">
+                  <option value="manager">Yönetici</option>
+                  <option value="viewer">İzleyici</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="addUserToBrandInline()">+ Ekle / Davet</button>
+                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('brand-add-user-form').style.display='none'">İptal</button>
+              </div>
+              <div id="bau-result" style="margin-top:8px;font-size:12px"></div>
+            </div>
+          </div>
+
+          <!-- Connector Erişimleri -->
+          <div style="border-bottom:1px solid var(--border)">
+            <div style="padding:12px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)">
+              🔌 Connector Erişimleri
+            </div>
+            <div id="brand-connectors-body" style="padding:0 20px 14px">
+              <div class="empty-state">Yükleniyor...</div>
+            </div>
+          </div>
+
+          <!-- Otomatik Çekim -->
+          <div>
+            <div style="padding:12px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)">
+              ⏰ Otomatik Çekim
+            </div>
+            <div id="brand-autofetch-body" style="padding:0 20px 14px">
+              <div class="empty-state">Yükleniyor...</div>
+            </div>
           </div>
         </div>
 
-        <!-- Kullanıcılar -->
+        <!-- Tüm Kullanıcılar -->
         <div class="card" style="margin-bottom:20px">
           <div class="card-header">
-            <span class="card-title">Kullanıcılar</span>
-            <span style="font-size:11px;color:var(--dim)">Kullanıcı eklemek için yukarıdaki Markalar bölümünden 👥 butonunu kullanın</span>
+            <span class="card-title">Tüm Kullanıcılar</span>
+            <span style="font-size:11px;color:var(--dim)">Kullanıcı eklemek için yukarıdan marka seçin</span>
           </div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>E-posta</th><th>Ad</th><th>Rol</th><th>Marka Erişimi</th><th>İşlemler</th></tr></thead>
               <tbody id="users-tbody">
-                <tr><td colspan="4"><div class="empty-state">Henüz kullanıcı yok</div></td></tr>
+                <tr><td colspan="5"><div class="empty-state">Henüz kullanıcı yok</div></td></tr>
               </tbody>
             </table>
-          </div>
-        </div>
-
-        <!-- Connector Erişimleri — Marka Bazlı -->
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-header">
-            <span class="card-title">Connector Erişimleri</span>
-            <span style="font-size:11px;color:var(--dim)">Marka bazında veri kaynakları</span>
-          </div>
-          <div class="card-body" id="connectors-by-brand">
-            <div class="empty-state">Markalar yükleniyor...</div>
-          </div>
-        </div>
-
-        <!-- Otomatik Çekim -->
-        <div class="card" id="auto-fetch-card">
-          <div class="card-header">
-            <span class="card-title">Otomatik Çekim</span>
-            <span style="font-size:11px;color:var(--dim)" id="auto-fetch-mode-badge"></span>
-          </div>
-          <div class="card-body" id="auto-fetch-body">
-            <div class="empty-state">Yükleniyor...</div>
           </div>
         </div>
 
@@ -732,9 +776,9 @@ async function openCustomer(customerId) {
   document.getElementById('det-mode').innerHTML   = currentCustomer.modes ? modeBadge(currentCustomer.modes.key) : '—';
   document.getElementById('det-status').innerHTML = statusBadge(currentCustomer.status);
 
+  selectedBrandId = null;
   loadBrands(customerId);
   loadUsers(customerId);
-  loadAutoFetch(customerId);
 }
 
 function backToCustomers() {
@@ -860,7 +904,275 @@ function openLocationWizardForBrand(brandId, brandName) {
   }, { once: true });
 }
 
-// ── MARKALAR ─────────────────────────────────────────────────
+// ── MARKA SEÇİMİ ─────────────────────────────────────────────
+async function selectBrand(brandId, brandName, locCount) {
+  selectedBrandId = brandId;
+
+  // Seçili satırı vurgula
+  document.querySelectorAll('[id^="brand-row-"]').forEach(r => {
+    r.style.background = r.id === `brand-row-${brandId}` ? 'var(--raised)' : '';
+    r.style.borderLeft = r.id === `brand-row-${brandId}` ? '3px solid var(--accent)' : '';
+  });
+
+  // Detay panelini göster
+  const panel = document.getElementById('brand-detail-section');
+  panel.style.display = 'block';
+  document.getElementById('selected-brand-name').textContent = brandName;
+
+  // Şube ekle butonu
+  document.getElementById('btn-add-loc').onclick = () =>
+    openLocationWizardForBrand(brandId, brandName);
+
+  // Panelleri doldur
+  await Promise.all([
+    loadBrandLocationsPanel(brandId),
+    loadBrandUsersPanel(brandId),
+    loadBrandConnectorsPanel(brandId),
+    loadBrandAutoFetchPanel(brandId),
+  ]);
+
+  // Panele kaydır
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function clearBrandSelection() {
+  selectedBrandId = null;
+  document.querySelectorAll('[id^="brand-row-"]').forEach(r => {
+    r.style.background = '';
+    r.style.borderLeft = '';
+  });
+  document.getElementById('brand-detail-section').style.display = 'none';
+}
+
+// Şubeler
+async function loadBrandLocationsPanel(brandId) {
+  const el = document.getElementById('brand-locations-body');
+  el.innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
+  const { data: locs } = await sb.from('locations').select('*').eq('brand_id', brandId).order('name');
+  if (!locs?.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:12px">Henüz şube yok — "+ Şube Ekle" ile başlayın</div>';
+    return;
+  }
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="padding:6px 10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">Şube Adı</th>
+        <th style="padding:6px 10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">Adres</th>
+        <th style="padding:6px 10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">Tip</th>
+        <th style="padding:6px 10px;border-bottom:1px solid var(--border)"></th>
+      </tr></thead>
+      <tbody>
+        ${locs.map(l => `
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:8px 10px"><strong>${l.name}</strong></td>
+            <td style="padding:8px 10px;color:var(--dim)">${l.address || '—'}</td>
+            <td style="padding:8px 10px">
+              <span class="badge badge-${l.location_type === 'branch' ? 'active' : 'beta'}">
+                ${l.location_type === 'branch' ? 'Şube' : 'Genel'}
+              </span>
+            </td>
+            <td style="padding:8px 10px">
+              <button class="btn btn-danger btn-sm" onclick="deleteBrandLocation('${l.location_id}','${brandId}')">Sil</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+async function deleteBrandLocation(locationId, brandId) {
+  if (!confirm('Bu şubeyi silmek istediğine emin misin?')) return;
+  await sb.from('location_connectors').delete().eq('location_id', locationId);
+  await sb.from('locations').delete().eq('location_id', locationId);
+  toast('Şube silindi', 'success');
+  await loadBrandLocationsPanel(brandId);
+  loadBrands(currentCustomer.customer_id);
+}
+
+// Kullanıcılar
+async function loadBrandUsersPanel(brandId) {
+  const el = document.getElementById('brand-users-body');
+  el.innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
+  const { data: allUsers } = await sb.from('users')
+    .select('user_id, email, name, role, brand_ids')
+    .eq('customer_id', currentCustomer.customer_id);
+  const users = (allUsers || []).filter(u =>
+    u.brand_ids === null || (Array.isArray(u.brand_ids) && u.brand_ids.includes(brandId))
+  );
+  if (!users.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:12px">Bu markaya erişen kullanıcı yok</div>';
+    return;
+  }
+  el.innerHTML = users.map(u => {
+    const isAll = u.brand_ids === null;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:13px;font-weight:600">${u.email}</div>
+        <div style="font-size:11px;color:var(--dim)">${u.name || '—'} ·
+          <span class="badge badge-${u.role === 'manager' ? 'saas_full' : 'consulting'}">${u.role === 'manager' ? 'Yönetici' : 'İzleyici'}</span>
+          ${isAll ? '<span style="margin-left:4px;font-size:10px;color:var(--amber)">Tüm markalara erişiyor</span>' : ''}
+        </div>
+      </div>
+      ${!isAll ? `<button class="btn btn-danger btn-sm" onclick="removeBrandUser('${u.user_id}','${brandId}')">Erişimi Kaldır</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function showBrandAddUserForm() {
+  document.getElementById('brand-add-user-form').style.display = 'block';
+  document.getElementById('bau-email').focus();
+}
+
+async function addUserToBrandInline() {
+  if (!selectedBrandId || !currentCustomer) return;
+  const email = document.getElementById('bau-email').value.trim();
+  const name  = document.getElementById('bau-name').value.trim();
+  const role  = document.getElementById('bau-role').value;
+  const res   = document.getElementById('bau-result');
+  if (!email) { res.textContent = '⚠ E-posta zorunlu'; res.style.color='var(--amber)'; return; }
+
+  const btn = document.querySelector('#brand-add-user-form .btn-primary');
+  btn.disabled = true; btn.textContent = '⏳';
+
+  try {
+    const { data: existing } = await sb.from('users')
+      .select('user_id, brand_ids')
+      .eq('customer_id', currentCustomer.customer_id)
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existing) {
+      const brandIds = [...(existing.brand_ids || [])];
+      if (!brandIds.includes(selectedBrandId)) {
+        brandIds.push(selectedBrandId);
+        await sb.from('users').update({ brand_ids: brandIds }).eq('user_id', existing.user_id);
+        res.textContent = `✓ ${email} bu markaya eklendi`; res.style.color = 'var(--green)';
+      } else {
+        res.textContent = `${email} zaten bu markaya erişiyor`; res.style.color = 'var(--amber)';
+      }
+    } else {
+      if (!name) { res.textContent = '⚠ Yeni kullanıcı için ad zorunlu'; res.style.color='var(--amber)'; btn.disabled=false; btn.textContent='+'; return; }
+      const resp = await fetch(`${ANALYSIS_URL}/invite-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-App-Secret': APP_SECRET_VAL },
+        body: JSON.stringify({ email, name, role, customer_id: currentCustomer.customer_id, redirect_url: CUSTOMER_PANEL, brand_ids: [selectedBrandId] }),
+      });
+      const data = await resp.json();
+      if (data.status === 'ok' || data.status === 'exists') {
+        res.textContent = `✓ ${email} davet gönderildi`; res.style.color = 'var(--green)';
+      } else throw new Error(data.error || 'Hata');
+    }
+    document.getElementById('bau-email').value = '';
+    document.getElementById('bau-name').value = '';
+    await loadBrandUsersPanel(selectedBrandId);
+    loadUsers(currentCustomer.customer_id);
+  } catch(e) {
+    res.textContent = '✗ ' + e.message; res.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false; btn.textContent = '+ Ekle / Davet';
+  }
+}
+
+async function removeBrandUser(userId, brandId) {
+  if (!confirm('Bu kullanıcının bu markaya erişimini kaldır?')) return;
+  const { data: u } = await sb.from('users').select('brand_ids').eq('user_id', userId).maybeSingle();
+  const newIds = (u?.brand_ids || []).filter(id => id !== brandId);
+  await sb.from('users').update({ brand_ids: newIds.length ? newIds : null }).eq('user_id', userId);
+  toast('Erişim kaldırıldı', 'success');
+  await loadBrandUsersPanel(brandId);
+  loadUsers(currentCustomer.customer_id);
+}
+
+// Connectorlar
+async function loadBrandConnectorsPanel(brandId) {
+  const el = document.getElementById('brand-connectors-body');
+  if (!allConnectors.length) { el.innerHTML = '<div class="empty-state">Connector yüklenemedi</div>'; return; }
+
+  const { data: bc } = await sb.from('brand_connectors')
+    .select('connector_id, enabled').eq('brand_id', brandId);
+  const enabledMap = {};
+  (bc || []).forEach(r => { enabledMap[r.connector_id] = r.enabled; });
+
+  el.innerHTML = `<div class="connector-grid" style="padding:4px 0">
+    ${allConnectors.map(c => {
+      const isEnabled = enabledMap[c.connector_id] === true;
+      return `<div class="connector-item ${isEnabled ? 'enabled' : ''}">
+        <div>
+          <div style="font-size:12px;font-weight:600">${c.name}</div>
+          <div style="font-size:11px;color:var(--dim)">${c.platform || ''}</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleBrandConnector('${brandId}','${c.connector_id}',this.checked)">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+async function toggleBrandConnector(brandId, connectorId, enabled) {
+  await sb.from('brand_connectors').upsert(
+    { brand_id: brandId, connector_id: connectorId, enabled },
+    { onConflict: 'brand_id,connector_id' }
+  );
+  toast(enabled ? 'Connector açıldı ✓' : 'Connector kapatıldı', 'success');
+}
+
+// Otomatik çekim — marka bazlı
+async function loadBrandAutoFetchPanel(brandId) {
+  const el = document.getElementById('brand-autofetch-body');
+
+  // Markanın modunu kontrol et
+  const brand = allBrands.find(b => b.brand_id === brandId);
+  const customer = allCustomers.find(c => c.customer_id === currentCustomer?.customer_id);
+  const modeKey = customer?.modes?.key || '';
+  if (modeKey !== 'saas_full') {
+    el.innerHTML = '<div class="empty-state" style="padding:12px">Otomatik çekim SaaS Full modunda kullanılabilir</div>';
+    return;
+  }
+
+  const { data: locs } = await sb.from('locations')
+    .select('location_id, name').eq('brand_id', brandId);
+  if (!locs?.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:12px">Önce şube ekleyin</div>';
+    return;
+  }
+  const locIds = locs.map(l => l.location_id);
+  const { data: lcs } = await sb.from('location_connectors')
+    .select('*, connectors(name,key)').in('location_id', locIds);
+
+  if (!lcs?.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:12px">Connector bağlı değil</div>';
+    return;
+  }
+
+  const byLoc = {};
+  lcs.forEach(lc => { (byLoc[lc.location_id] = byLoc[lc.location_id]||[]).push(lc); });
+
+  el.innerHTML = locs.map(loc => {
+    const locLcs = byLoc[loc.location_id] || [];
+    return `<div style="border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:8px">
+      <div style="font-weight:600;margin-bottom:8px;font-size:12px">📍 ${loc.name}</div>
+      ${locLcs.map(lc => `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:12px;color:var(--dim)">${lc.connectors?.name || lc.connector_id}</span>
+          <select style="background:var(--raised);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:4px 8px"
+                  onchange="updateSchedule('${lc.location_connector_id}',this.value)">
+            <option value="" ${!lc.fetch_schedule?'selected':''}>Kapalı</option>
+            <option value="daily" ${lc.fetch_schedule==='daily'?'selected':''}>Günlük</option>
+            <option value="weekly" ${lc.fetch_schedule==='weekly'?'selected':''}>Haftalık</option>
+            <option value="biweekly" ${lc.fetch_schedule==='biweekly'?'selected':''}>15 Günlük</option>
+            <option value="monthly" ${lc.fetch_schedule==='monthly'?'selected':''}>Aylık</option>
+          </select>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+
+let selectedBrandId = null;
+
 async function loadBrands(customerId) {
   const tbody = document.getElementById('brands-tbody');
   if (!tbody) return;
@@ -872,7 +1184,8 @@ async function loadBrands(customerId) {
   allBrands = brands || [];
 
   if (!allBrands.length) {
-    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">Henüz marka yok — + Marka Ekle ile başlayın</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Henüz marka yok — + Marka Ekle ile başlayın</div></td></tr>';
+    document.getElementById('brand-detail-section').style.display = 'none';
     return;
   }
 
@@ -884,15 +1197,20 @@ async function loadBrands(customerId) {
   }));
   allBrands = rows;
 
+  // Thead güncelle
+  const thead = tbody.closest('table')?.querySelector('thead tr');
+  if (thead) thead.innerHTML = '<th>Marka Adı</th><th>Sektör</th><th>Şube</th><th>İşlemler</th><th style="width:30px"></th>';
+
   tbody.innerHTML = rows.map(b => `
-    <tr>
+    <tr id="brand-row-${b.brand_id}" onclick="selectBrand('${b.brand_id}','${b.name.replace(/'/g,"\\'")}',${b.locCount})"
+        style="cursor:pointer;transition:background .1s">
       <td><strong>${b.name}</strong></td>
       <td style="color:var(--dim)">${b.sector_template || '—'}</td>
       <td style="color:var(--dim)">${b.locCount} şube</td>
-      <td>
-        <button class="btn btn-ghost btn-sm" onclick="openLocationWizardForBrand('${b.brand_id}','${b.name.replace(/'/g,"\\'")}')">+ Şube Ekle</button>
+      <td onclick="event.stopPropagation()" style="display:flex;gap:6px;align-items:center">
         <button class="btn btn-danger btn-sm" onclick="deleteBrand('${b.brand_id}')">Sil</button>
       </td>
+      <td style="color:var(--dim);font-size:16px">›</td>
     </tr>
   `).join('');
 
@@ -903,9 +1221,11 @@ async function loadBrands(customerId) {
       rows.map(b => `<option value="${b.brand_id}">${b.name}</option>`).join('');
   }
 
-  // Lokasyon ve connector accordion'larını güncelle
-  renderLocationsByBrand(rows);
-  renderConnectorsByBrand(rows);
+  // Önceki seçim varsa yenile
+  if (selectedBrandId && rows.find(b => b.brand_id === selectedBrandId)) {
+    const brand = rows.find(b => b.brand_id === selectedBrandId);
+    selectBrand(brand.brand_id, brand.name, brand.locCount);
+  }
 }
 
 async function createBrand() {
@@ -1179,129 +1499,7 @@ function haversine(lat1, lng1, lat2, lng2) {
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-// ── LOKASYONLAR — MARKA BAZLI ────────────────────────────────
-async function renderLocationsByBrand(brands) {
-  const el = document.getElementById('locations-by-brand');
-  if (!brands?.length) { el.innerHTML = '<div class="empty-state">Henüz marka yok</div>'; return; }
-
-  el.innerHTML = brands.map(b => `
-    <div style="border-bottom:1px solid var(--border)">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;transition:background .1s"
-           onclick="toggleBrandLocations('${b.brand_id}')" id="loc-header-${b.brand_id}">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:13px;color:var(--dim)" id="loc-arrow-${b.brand_id}">▶</span>
-          <strong>${b.name}</strong>
-          <span style="font-size:11px;color:var(--muted)">${b.locCount} şube</span>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openLocationWizardForBrand('${b.brand_id}','${b.name.replace(/'/g,"\\'")}')">+ Şube Ekle</button>
-      </div>
-      <div id="loc-body-${b.brand_id}" style="display:none;padding:0 20px 14px"></div>
-    </div>
-  `).join('');
-}
-
-async function toggleBrandLocations(brandId) {
-  const body  = document.getElementById('loc-body-' + brandId);
-  const arrow = document.getElementById('loc-arrow-' + brandId);
-  if (body.style.display === 'none') {
-    body.style.display = 'block';
-    arrow.textContent = '▼';
-    await loadBrandLocations(brandId, body);
-  } else {
-    body.style.display = 'none';
-    arrow.textContent = '▶';
-  }
-}
-
-async function loadBrandLocations(brandId, container) {
-  container.innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
-  const { data: locs } = await sb.from('locations').select('*').eq('brand_id', brandId).order('name');
-  if (!locs?.length) {
-    container.innerHTML = '<div class="empty-state" style="padding:12px">Bu markaya henüz şube eklenmemiş</div>';
-    return;
-  }
-  container.innerHTML = `
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr>
-        <th style="padding:6px 10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">Şube Adı</th>
-        <th style="padding:6px 10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">Adres</th>
-        <th style="padding:6px 10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">Tip</th>
-        <th style="padding:6px 10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">Place ID</th>
-        <th style="padding:6px 10px;border-bottom:1px solid var(--border)"></th>
-      </tr></thead>
-      <tbody>
-        ${locs.map(l => `
-          <tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:8px 10px"><strong>${l.name}</strong></td>
-            <td style="padding:8px 10px;color:var(--dim)">${l.address || '—'}</td>
-            <td style="padding:8px 10px"><span class="badge badge-${l.location_type === 'branch' ? 'active' : 'beta'}">${l.location_type === 'branch' ? 'Şube' : 'Genel'}</span></td>
-            <td style="padding:8px 10px;color:var(--dim);font-size:11px">${l.google_place_id ? l.google_place_id.slice(0,12)+'...' : '—'}</td>
-            <td style="padding:8px 10px"><button class="btn btn-danger btn-sm" onclick="deleteLocationBrand('${l.location_id}','${brandId}')">Sil</button></td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>`;
-}
-
-async function deleteLocationBrand(locationId, brandId) {
-  if (!confirm('Bu şubeyi silmek istediğine emin misin?')) return;
-  await sb.from('location_connectors').delete().eq('location_id', locationId);
-  await sb.from('locations').delete().eq('location_id', locationId);
-  toast('Şube silindi', 'success');
-  const body = document.getElementById('loc-body-' + brandId);
-  if (body) await loadBrandLocations(brandId, body);
-  loadBrands(currentCustomer.customer_id); // şube sayısını güncelle
-}
-
-// ── CONNECTORLAR — MARKA BAZLI ───────────────────────────────
-async function renderConnectorsByBrand(brands) {
-  const el = document.getElementById('connectors-by-brand');
-  if (!brands?.length) { el.innerHTML = '<div class="empty-state">Henüz marka yok</div>'; return; }
-  if (!allConnectors.length) { el.innerHTML = '<div class="empty-state">Connector listesi yüklenemedi</div>'; return; }
-
-  // Tüm markaların connector durumlarını çek
-  const brandIds = brands.map(b => b.brand_id);
-  const { data: bc } = await sb.from('brand_connectors')
-    .select('brand_id, connector_id, enabled')
-    .in('brand_id', brandIds);
-
-  const enabledMap = {}; // brand_id:connector_id → enabled
-  (bc || []).forEach(r => { enabledMap[`${r.brand_id}:${r.connector_id}`] = r.enabled; });
-
-  el.innerHTML = brands.map(b => `
-    <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
-      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px">${b.name}</div>
-      <div class="connector-grid">
-        ${allConnectors.map(c => {
-          const key = `${b.brand_id}:${c.connector_id}`;
-          const isEnabled = enabledMap[key] === true;
-          return `
-            <div class="connector-item ${isEnabled ? 'enabled' : ''}">
-              <div>
-                <div style="font-size:12px;font-weight:600">${c.name}</div>
-                <div style="font-size:11px;color:var(--dim);margin-top:2px">${c.platform||''}</div>
-              </div>
-              <label class="toggle">
-                <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleBrandConnector('${b.brand_id}','${c.connector_id}',this.checked)">
-                <div class="toggle-track"></div>
-                <div class="toggle-thumb"></div>
-              </label>
-            </div>`;
-        }).join('')}
-      </div>
-    </div>
-  `).join('');
-}
-
-async function toggleBrandConnector(brandId, connectorId, enabled) {
-  await sb.from('brand_connectors').upsert(
-    { brand_id: brandId, connector_id: connectorId, enabled },
-    { onConflict: 'brand_id,connector_id' }
-  );
-  toast(enabled ? 'Connector açıldı ✓' : 'Connector kapatıldı', 'success');
-}
-
-
+// ── LOKASYONLAR ──────────────────────────────────────────────
 async function loadLocations(customerId) {
   const tbody = document.getElementById('locations-tbody');
   if (!tbody) return;
