@@ -14,54 +14,39 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:32px 20px}
-
 .wizard{width:100%;max-width:680px}
 .wizard-header{margin-bottom:24px}
 .wizard-title{font-size:20px;font-weight:700;color:var(--accent)}
 .wizard-sub{font-size:12px;color:var(--dim);margin-top:4px}
-
-/* TABS */
 .tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px}
 .tab-btn{padding:10px 18px;font-size:12px;font-weight:600;color:var(--dim);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
-
-/* CARD */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
-
-/* FORM */
 .fg{margin-bottom:16px}
 .fg label{display:block;font-size:11px;color:var(--dim);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
 .fg input,.fg select,.fg textarea{width:100%;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:inherit;font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent)}
 .fg textarea{resize:vertical;min-height:120px}
 .fg-hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
-
-/* SEARCH */
 .search-row{display:flex;gap:8px}
-.search-results{display:flex;flex-direction:column;gap:8px;margin-top:12px}
-.sri{background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s}
+.sri{background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s;margin-bottom:8px}
 .sri:hover{border-color:var(--accent)}
 .sri.selected{border-color:var(--green);background:#0f2a1a}
-.sri-icon{font-size:22px}
 .sri-name{font-size:13px;font-weight:600}
 .sri-addr{font-size:11px;color:var(--dim);margin-top:2px}
 .sri-rating{font-size:11px;color:var(--amber);margin-top:2px}
 .sri-check{margin-left:auto;color:var(--green);display:none;font-size:18px}
 .sri.selected .sri-check{display:block}
-
-/* ADDED LIST */
 .added-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
-.added-item{background:var(--raised);border:1px solid var(--green);border-radius:var(--r);padding:10px 14px;gap:10px}
+.added-item{background:var(--raised);border:1px solid var(--green);border-radius:var(--r);padding:10px 14px}
 .added-item-top{display:flex;align-items:center;gap:10px}
 .added-item-name-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:13px;font-weight:600;padding:6px 10px;outline:none;transition:border-color .15s}
 .added-item-name-input:focus{border-color:var(--accent)}
 .added-item-addr{font-size:11px;color:var(--muted);margin-top:4px;padding-left:32px}
 .added-item-type{font-size:10px;background:var(--muted);color:var(--bg);padding:2px 6px;border-radius:4px;white-space:nowrap}
 .added-item-rm{background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;line-height:1;flex-shrink:0}
-
-/* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:none;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;transition:all .15s}
 .btn-primary{background:var(--accent);color:#000}
 .btn-primary:hover{background:#e09800}
@@ -70,13 +55,9 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-
 .btn-ghost:hover{color:var(--text);border-color:var(--muted)}
 .btn-green{background:var(--green);color:#000}
 .btn-sm{padding:5px 12px;font-size:12px}
-
-/* BOTTOM BAR */
-.bottom-bar{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-top:24px;border-radius:0 0 var(--r) var(--r)}
+.bottom-bar{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-top:24px}
 .added-count{font-size:12px;color:var(--dim)}
 .added-count strong{color:var(--green);font-size:16px}
-
-/* MISC */
 .spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty{text-align:center;padding:24px;color:var(--muted);font-size:13px}
@@ -90,47 +71,39 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-
 </head>
 <body>
 <div class="wizard">
-
   <div class="wizard-header">
     <div class="wizard-title">📍 Şube / Lokasyon Ekle</div>
-    <div class="wizard-sub" id="customer-name-sub">Müşteri yükleniyor...</div>
+    <div class="wizard-sub" id="customer-name-sub">Yükleniyor...</div>
   </div>
-
   <div id="main-alert" class="alert" style="display:none"></div>
-
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('search')">🔍 Google'da Ara</button>
-    <button class="tab-btn" onclick="switchTab('bulk')">📝 Toplu Metin</button>
-    <button class="tab-btn" onclick="switchTab('csv')">📊 CSV Yükle</button>
-    <button class="tab-btn" onclick="switchTab('general')">🌐 Genel İzleme</button>
+    <button class="tab-btn active" onclick="switchTab('search',this)">🔍 Google'da Ara</button>
+    <button class="tab-btn" onclick="switchTab('bulk',this)">📝 Toplu Metin</button>
+    <button class="tab-btn" onclick="switchTab('csv',this)">📊 CSV Yükle</button>
+    <button class="tab-btn" onclick="switchTab('general',this)">🌐 Genel İzleme</button>
   </div>
 
-  <!-- GOOGLE ARAMA -->
   <div class="tab-panel active" id="tab-search">
     <div class="card">
       <div class="fg">
         <label>Şube Adı veya Adres</label>
         <div class="search-row">
-          <input id="search-input" type="text" placeholder="örn: LCWaikiki Kadıköy İstanbul" style="flex:1"
+          <input id="search-input" type="text" placeholder="örn: Lacoste Kadıköy İstanbul" style="flex:1"
                  onkeydown="if(event.key==='Enter')searchLocation()">
           <button class="btn btn-primary btn-sm" onclick="searchLocation()" id="search-btn">Ara</button>
         </div>
-        <div class="fg-hint">Şube adı ve şehri birlikte yazın. Google Maps'ten otomatik arar.</div>
+        <div class="fg-hint">Şube adı ve şehri birlikte yazın.</div>
       </div>
       <div id="search-results"></div>
     </div>
   </div>
 
-  <!-- TOPLU METİN -->
   <div class="tab-panel" id="tab-bulk">
     <div class="card">
       <div class="fg">
         <label>Şube Listesi (Her Satıra Bir Şube)</label>
-        <textarea id="bulk-input" placeholder="LCWaikiki Ataşehir İstanbul&#10;LCWaikiki Kadıköy İstanbul&#10;LCWaikiki Bağcılar İstanbul&#10;..."></textarea>
-        <div class="fg-hint">
-          <strong>"Marka Adı Semt Şehir"</strong> formatında yazın.<br>
-          Her satır Google Maps'te aranır ve otomatik place_id bulunur.
-        </div>
+        <textarea id="bulk-input" placeholder="Lacoste Ataşehir İstanbul&#10;Lacoste Kadıköy İstanbul&#10;..."></textarea>
+        <div class="fg-hint"><strong>"Marka Adı Semt Şehir"</strong> formatında yazın.</div>
       </div>
       <div id="bulk-progress" style="display:none">
         <div class="progress-bar-wrap"><div class="progress-bar-fill" id="bulk-progress-fill" style="width:0%"></div></div>
@@ -140,39 +113,30 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-
     </div>
   </div>
 
-  <!-- CSV -->
   <div class="tab-panel" id="tab-csv">
     <div class="card">
       <div class="fg">
         <label>CSV Dosyası</label>
         <input type="file" id="csv-file" accept=".csv,.txt" style="padding:8px;color:var(--text)">
-        <div class="fg-hint">
-          Format: <strong>Şube Adı, Şehir, Adres (opsiyonel), Google Place ID (opsiyonel)</strong><br>
-          Örnek satır: <code>LCWaikiki Kadıköy, İstanbul, Moda Cad. No:5</code><br>
-          Place ID girilirse direkt eklenir. Girilmezse Google'da aranır.
-        </div>
+        <div class="fg-hint">Format: <strong>Şube Adı, Şehir, Adres (opsiyonel), Google Place ID (opsiyonel)</strong></div>
       </div>
-      <div id="csv-preview" style="margin-bottom:12px"></div>
       <button class="btn btn-primary" onclick="processCSV()" id="csv-btn">CSV'yi İşle</button>
     </div>
   </div>
 
-  <!-- GENEL İZLEME -->
   <div class="tab-panel" id="tab-general">
     <div class="card">
       <p style="font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.6">
-        Fiziksel şube değil, markanın genel dijital varlığını izlemek için kullanılır.
         Twitter, Ekşi Sözlük gibi platformlardaki mention'lar bu lokasyona bağlanır.
       </p>
       <div class="fg">
         <label>İzleme Noktası Adı</label>
-        <input id="general-name" type="text" placeholder="örn: LCWaikiki Türkiye Genel">
+        <input id="general-name" type="text" placeholder="örn: Lacoste Türkiye Genel">
       </div>
       <button class="btn btn-green" onclick="addGeneralLocation()">+ Genel İzleme Noktası Ekle</button>
     </div>
   </div>
 
-  <!-- EKLENMİŞ LOKASYONLAR -->
   <div id="added-section" style="display:none">
     <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">
       Eklenecek Lokasyonlar (<span id="added-count-badge">0</span>)
@@ -180,27 +144,21 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-
     <div class="added-list" id="added-list"></div>
   </div>
 
-  <!-- ALT BAR -->
   <div class="bottom-bar">
     <div class="added-count"><strong id="added-count-num">0</strong> lokasyon hazır</div>
     <div style="display:flex;gap:10px">
-      <button class="btn btn-ghost" onclick="window.close()">İptal</button>
-      <button class="btn btn-primary" id="save-btn" onclick="saveAll()" disabled>
-        Veritabanına Kaydet →
-      </button>
+      <button class="btn btn-ghost" onclick="window.close()">Kapat</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveAll()" disabled>Veritabanına Kaydet →</button>
     </div>
   </div>
-
 </div>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────
 const SUPABASE_URL      = 'https://escjdzsfxzwvshapzugb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzY2pkenNmeHp3dnNoYXB6dWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDQzMzgsImV4cCI6MjA4OTg4MDMzOH0.ylywekAEhONMpx5RBCdZXafUna9jZcB19etFrEcRJe8';
-
 const sb          = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const params      = new URLSearchParams(window.location.search);
-const CUSTOMER_ID = params.get('customer_id') || '';
+const CUSTOMER_ID    = params.get('customer_id') || '';
 const BRAND_ID_PARAM = params.get('brand_id') || '';
 const BRAND_NAME_PARAM = params.get('brand_name') || '';
 const RETURN_URL  = params.get('return') || '';
@@ -209,72 +167,54 @@ let addedLocations = [];
 let gmapsUrl = '', appSecret = '', brandId = '';
 
 async function boot() {
-  if (!CUSTOMER_ID && !BRAND_ID_PARAM) { showAlert('Müşteri veya Marka ID bulunamadı', 'error'); return; }
-
+  if (!CUSTOMER_ID && !BRAND_ID_PARAM) { showAlert('Marka ID bulunamadı', 'error'); return; }
   if (BRAND_ID_PARAM) {
-    // Rakip marka modu
     brandId = BRAND_ID_PARAM;
-    document.getElementById('customer-name-sub').textContent = `Rakip Marka: ${BRAND_NAME_PARAM}`;
+    document.getElementById('customer-name-sub').textContent = `Marka: ${BRAND_NAME_PARAM}`;
   } else {
-    // Normal müşteri modu
     const { data: cust } = await sb.from('customers').select('name').eq('customer_id', CUSTOMER_ID).single();
     if (cust) document.getElementById('customer-name-sub').textContent = `Müşteri: ${cust.name}`;
-
     let { data: brands } = await sb.from('brands').select('brand_id').eq('customer_id', CUSTOMER_ID).limit(1);
-    if (!brands?.length) {
-      const { data: newBrand } = await sb.from('brands').insert({
-        customer_id: CUSTOMER_ID, name: cust?.name || 'Marka', monitoring_modes: ['location'],
-      }).select().single();
-      brandId = newBrand?.brand_id || '';
-    } else {
+    if (brands?.length) {
       brandId = brands[0].brand_id;
+    } else {
+      showAlert('Önce marka oluşturun', 'error'); return;
     }
   }
-
   const { data: settings } = await sb.from('system_settings').select('key,value');
   const m = {}; (settings||[]).forEach(r => m[r.key] = r.value);
   gmapsUrl  = m['gmaps_url']  || '';
   appSecret = m['app_secret'] || '';
 }
 
-// ── TABS ─────────────────────────────────────────────────
-function switchTab(tab) {
+function switchTab(tab, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  event.target.classList.add('active');
+  btn.classList.add('active');
   document.getElementById('tab-' + tab).classList.add('active');
 }
 
-// ── GOOGLE ARAMA ──────────────────────────────────────────
 async function searchLocation() {
   const q = document.getElementById('search-input').value.trim();
   if (!q) return;
-  const el  = document.getElementById('search-results');
+  const el = document.getElementById('search-results');
   const btn = document.getElementById('search-btn');
-  el.innerHTML  = '<div class="empty"><span class="spinner"></span> Aranıyor...</div>';
-  btn.disabled  = true;
-
+  el.innerHTML = '<div class="empty"><span class="spinner"></span> Aranıyor...</div>';
+  btn.disabled = true;
   const results = await searchGoogleMaps(q);
-  btn.disabled  = false;
-
-  if (!results.length) {
-    el.innerHTML = '<div class="empty">Sonuç bulunamadı. Farklı arama deneyin veya toplu metin sekmesini kullanın.</div>';
-    return;
-  }
-
+  btn.disabled = false;
+  if (!results.length) { el.innerHTML = '<div class="empty">Sonuç bulunamadı.</div>'; return; }
   el.innerHTML = results.map((r, i) => `
-    <div class="sri ${addedLocations.find(l=>l.placeId===r.place_id)?'selected':''}"
-         id="sri-${i}"
+    <div class="sri ${addedLocations.find(l=>l.placeId===r.place_id)?'selected':''}" id="sri-${i}"
          onclick="toggleSearchResult(${i},'${esc(r.name)}','${esc(r.address)}','${r.place_id||''}',${r.lat||0},${r.lng||0})">
-      <div class="sri-icon">📍</div>
+      <div style="font-size:20px">📍</div>
       <div style="flex:1">
         <div class="sri-name">${r.name}</div>
         <div class="sri-addr">${r.address}</div>
-        ${r.rating ? `<div class="sri-rating">★ ${r.rating} (${r.total_ratings||0} yorum)</div>` : ''}
+        ${r.rating ? `<div class="sri-rating">★ ${r.rating} (${r.total_ratings||0})</div>` : ''}
       </div>
       <div class="sri-check">✓</div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function toggleSearchResult(i, name, address, placeId, lat, lng) {
@@ -289,62 +229,42 @@ function toggleSearchResult(i, name, address, placeId, lat, lng) {
   renderAdded();
 }
 
-// ── TOPLU METİN ──────────────────────────────────────────
 async function processBulk() {
   const text = document.getElementById('bulk-input').value.trim();
   if (!text) return;
-  const lines  = text.split('\n').filter(l => l.trim());
-  const btn    = document.getElementById('bulk-btn');
-  const prog   = document.getElementById('bulk-progress');
-  const fill   = document.getElementById('bulk-progress-fill');
-  const ptxt   = document.getElementById('bulk-progress-text');
-
-  btn.disabled      = true;
-  prog.style.display = 'block';
+  const lines = text.split('\n').filter(l => l.trim());
+  const btn = document.getElementById('bulk-btn');
+  const prog = document.getElementById('bulk-progress');
+  const fill = document.getElementById('bulk-progress-fill');
+  const ptxt = document.getElementById('bulk-progress-text');
+  btn.disabled = true; prog.style.display = 'block';
   let done = 0, found = 0;
-
   for (const line of lines) {
-    const q = line.trim();
-    if (!q) { done++; continue; }
-
+    const q = line.trim(); if (!q) { done++; continue; }
     ptxt.textContent = `${done+1}/${lines.length} — "${q}" aranıyor...`;
     fill.style.width = `${Math.round((done/lines.length)*100)}%`;
-
-    if (gmapsUrl && appSecret) {
-      const results = await searchGoogleMaps(q);
-      if (results.length) {
-        const r = results[0];
-        if (!addedLocations.find(l => l.placeId === r.place_id)) {
-          addedLocations.push({ name: r.name, customName: r.name, address: r.address, placeId: r.place_id, type: 'branch', lat: r.lat, lng: r.lng });
-          found++;
-        }
-      } else {
-        addedLocations.push({ name: q, customName: q, address: '', placeId: '', type: 'branch', lat: 0, lng: 0 });
-        found++;
-      }
+    const results = await searchGoogleMaps(q);
+    if (results.length) {
+      const r = results[0];
+      if (!addedLocations.find(l => l.placeId === r.place_id))
+        addedLocations.push({ name: r.name, customName: r.name, address: r.address, placeId: r.place_id, type: 'branch', lat: r.lat, lng: r.lng });
     } else {
       addedLocations.push({ name: q, customName: q, address: '', placeId: '', type: 'branch', lat: 0, lng: 0 });
-      found++;
     }
-    done++;
+    found++; done++;
     await new Promise(r => setTimeout(r, 200));
   }
-
-  fill.style.width   = '100%';
-  ptxt.textContent   = `✓ Tamamlandı — ${found} lokasyon eklendi`;
-  ptxt.style.color   = 'var(--green)';
-  btn.disabled       = false;
+  fill.style.width = '100%';
+  ptxt.textContent = `✓ ${found} lokasyon eklendi`; ptxt.style.color = 'var(--green)';
+  btn.disabled = false;
   document.getElementById('bulk-input').value = '';
   renderAdded();
 }
 
-// ── CSV ──────────────────────────────────────────────────
 async function processCSV() {
   const file = document.getElementById('csv-file').files[0];
-  if (!file) { showAlert('Önce bir CSV dosyası seçin', 'error'); return; }
-  const btn = document.getElementById('csv-btn');
-  btn.disabled = true;
-
+  if (!file) { showAlert('Önce CSV seçin', 'error'); return; }
+  const btn = document.getElementById('csv-btn'); btn.disabled = true;
   const reader = new FileReader();
   reader.onload = async (e) => {
     const lines = e.target.result.split('\n').filter(l => l.trim());
@@ -352,27 +272,18 @@ async function processCSV() {
     for (const line of lines) {
       const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
       if (!parts[0]) continue;
-      const name    = parts[0];
-      const city    = parts[1] || '';
-      const address = parts[2] || city;
-      const placeId = parts[3] || '';
-
+      const name = parts[0], city = parts[1]||'', address = parts[2]||city, placeId = parts[3]||'';
       if (placeId) {
-        addedLocations.push({ name, address, placeId, type: 'branch', lat: 0, lng: 0 });
-        added++;
-      } else if (gmapsUrl && appSecret) {
+        addedLocations.push({ name, customName: name, address, placeId, type: 'branch', lat: 0, lng: 0 });
+      } else {
         const results = await searchGoogleMaps(`${name} ${city}`);
         const r = results[0];
         addedLocations.push(r
           ? { name: r.name, customName: r.name, address: r.address, placeId: r.place_id, type: 'branch', lat: r.lat, lng: r.lng }
-          : { name, customName: name, address, placeId: '', type: 'branch', lat: 0, lng: 0 }
-        );
-        added++;
+          : { name, customName: name, address, placeId: '', type: 'branch', lat: 0, lng: 0 });
         await new Promise(r => setTimeout(r, 200));
-      } else {
-        addedLocations.push({ name, customName: name, address, placeId: '', type: 'branch', lat: 0, lng: 0 });
-        added++;
       }
+      added++;
     }
     btn.disabled = false;
     showAlert(`✓ CSV'den ${added} lokasyon eklendi`, 'success');
@@ -381,7 +292,6 @@ async function processCSV() {
   reader.readAsText(file, 'UTF-8');
 }
 
-// ── GENEL İZLEME ─────────────────────────────────────────
 function addGeneralLocation() {
   const name = document.getElementById('general-name').value.trim();
   if (!name) return;
@@ -390,94 +300,80 @@ function addGeneralLocation() {
   renderAdded();
 }
 
-// ── RENDER ────────────────────────────────────────────────
 function renderAdded() {
   const count = addedLocations.length;
-  document.getElementById('added-count-num').textContent   = count;
+  document.getElementById('added-count-num').textContent = count;
   document.getElementById('added-count-badge').textContent = count;
-  document.getElementById('save-btn').disabled             = count === 0;
-  document.getElementById('added-section').style.display  = count ? 'block' : 'none';
-
+  document.getElementById('save-btn').disabled = count === 0;
+  document.getElementById('added-section').style.display = count ? 'block' : 'none';
   document.getElementById('added-list').innerHTML = addedLocations.map((l, i) => `
     <div class="added-item">
       <div class="added-item-top">
         <span style="font-size:18px;flex-shrink:0">${l.type === 'general' ? '🌐' : '📍'}</span>
-        <input class="added-item-name-input"
-               value="${esc(l.customName || l.name)}"
-               placeholder="Şube adı girin"
-               oninput="updateCustomName(${i}, this.value)"
-               title="Dashboardda görünecek ad">
+        <input class="added-item-name-input" value="${esc(l.customName || l.name)}"
+               placeholder="Şube adı" oninput="updateCustomName(${i}, this.value)">
         <span class="added-item-type">${l.type === 'general' ? 'Genel' : 'Şube'}</span>
         ${l.placeId ? '<span style="font-size:10px;color:var(--green)">✓ Maps</span>' : '<span style="font-size:10px;color:var(--amber)">! ID yok</span>'}
         <button class="added-item-rm" onclick="removeAdded(${i})">×</button>
       </div>
-      <div class="added-item-addr">
-        ${l.name !== (l.customName || l.name) ? `<span style="color:var(--muted)">Google adı: ${l.name} · </span>` : ''}${l.address || (l.placeId ? '' : 'Adres girilmedi')}
-      </div>
-    </div>
-  `).join('');
+      <div class="added-item-addr">${l.address || ''}</div>
+    </div>`).join('');
 }
 
-function removeAdded(i) {
-  addedLocations.splice(i, 1);
-  renderAdded();
-}
+function removeAdded(i) { addedLocations.splice(i, 1); renderAdded(); }
+function updateCustomName(i, val) { addedLocations[i].customName = val.trim() || addedLocations[i].name; }
 
-function updateCustomName(i, val) {
-  addedLocations[i].customName = val.trim() || addedLocations[i].name;
-}
-
-// ── KAYDET ────────────────────────────────────────────────
 async function saveAll() {
   if (!addedLocations.length) return;
   const btn = document.getElementById('save-btn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Kaydediliyor...';
-
+  btn.disabled = true; btn.textContent = '⏳ Kaydediliyor...';
   try {
     if (!brandId) throw new Error('Marka ID bulunamadı');
-
-    // Connector listesini al
     const { data: connectors } = await sb.from('connectors').select('connector_id, key');
-
     let saved = 0;
     for (const loc of addedLocations) {
       const { data: newLoc, error } = await sb.from('locations').insert({
-        brand_id:        brandId,
-        name:            loc.customName || loc.name,
-        address:         loc.address || null,
+        brand_id: brandId,
+        name: loc.customName || loc.name,
+        address: loc.address || null,
         google_place_id: loc.placeId || null,
-        lat:             loc.lat || null,
-        lng:             loc.lng || null,
-        location_type:   loc.type,
+        lat: loc.lat || null,
+        lng: loc.lng || null,
+        location_type: loc.type,
       }).select().single();
-
       if (error) continue;
       saved++;
-
-      // location_connectors oluştur
       for (const conn of (connectors || [])) {
         if (loc.type === 'branch'  && conn.key !== 'google_maps') continue;
         if (loc.type === 'general' && conn.key === 'google_maps') continue;
         await sb.from('location_connectors').upsert({
-          location_id:  newLoc.location_id,
+          location_id: newLoc.location_id,
           connector_id: conn.connector_id,
-          enabled:      true,
-          external_id:  loc.placeId || null,
+          enabled: true,
+          external_id: loc.placeId || null,
         }, { onConflict: 'location_id,connector_id' });
       }
     }
 
-    showAlert(`✓ ${saved} lokasyon başarıyla kaydedildi!`, 'success');
-    btn.textContent = `✓ ${saved} Kaydedildi`;
-    btn.style.background = 'var(--green)';
-
     window.opener?.postMessage({ type: 'locations_saved', count: saved }, '*');
+    showAlert(`✓ ${saved} lokasyon kaydedildi!`, 'success');
 
-    setTimeout(() => {
-      if (RETURN_URL) window.location.href = RETURN_URL;
-      else window.close();
-    }, 1500);
+    // Devam et mi kapat mı?
+    addedLocations = [];
+    renderAdded();
+    btn.disabled = false;
+    btn.textContent = 'Veritabanına Kaydet →';
+    document.getElementById('search-results').innerHTML = '';
+    document.getElementById('search-input').value = '';
+
+    // Alt barda "Devam et / Kapat" seçeneği göster
+    const bar = document.querySelector('.bottom-bar');
+    bar.innerHTML = `
+      <div style="font-size:13px;color:var(--green);font-weight:600">✓ ${saved} şube kaydedildi</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" onclick="closeWizard()">Kapat</button>
+        <button class="btn btn-primary" onclick="continueAdding()">+ Devam Et</button>
+      </div>`;
 
   } catch(e) {
     showAlert('Hata: ' + e.message, 'error');
@@ -486,14 +382,27 @@ async function saveAll() {
   }
 }
 
-// ── HELPERS ──────────────────────────────────────────────
+function continueAdding() {
+  // Alt barı sıfırla
+  document.querySelector('.bottom-bar').innerHTML = `
+    <div class="added-count"><strong id="added-count-num">0</strong> lokasyon hazır</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" onclick="window.close()">Kapat</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveAll()" disabled>Veritabanına Kaydet →</button>
+    </div>`;
+}
+
+function closeWizard() {
+  if (RETURN_URL) window.location.href = RETURN_URL;
+  else window.close();
+}
+
 async function searchGoogleMaps(q) {
   if (!gmapsUrl || !appSecret) return [];
   try {
     const resp = await fetch(
       `${gmapsUrl.replace(/\/$/,'')}/search?q=${encodeURIComponent(q)}&secret=${encodeURIComponent(appSecret)}`,
-      { signal: AbortSignal.timeout(10000) }
-    );
+      { signal: AbortSignal.timeout(10000) });
     if (!resp.ok) return [];
     const data = await resp.json();
     return data.results || [];
@@ -505,8 +414,8 @@ function esc(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 function showAlert(msg, type) {
   const el = document.getElementById('main-alert');
   el.style.display = 'block';
-  el.className     = `alert alert-${type}`;
-  el.textContent   = msg;
+  el.className = `alert alert-${type}`;
+  el.textContent = msg;
   if (type === 'success') setTimeout(() => el.style.display='none', 3000);
 }
 
