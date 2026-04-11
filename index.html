@@ -156,36 +156,8 @@ select option{background:var(--raised)}
     <div class="nav-item" data-page="cost" onclick="navigate('cost')">⬡ Maliyet</div>
     <div class="nav-item" data-page="settings" onclick="navigate('settings')">⬡ Ayarlar</div>
   </div>
-  <div class="sidebar-footer">
-    <div id="admin-user-email" style="margin-bottom:8px;font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-    <button onclick="adminLogout()" style="background:none;border:1px solid var(--border);color:var(--dim);border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit;width:100%">Çıkış Yap</button>
-  </div>
+  <div class="sidebar-footer">v2.0 — Sadeleştirilmiş</div>
 </nav>
-
-<!-- LOGIN SCREEN -->
-<div id="admin-login" style="position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:360px">
-    <div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:24px">SENTIMENT PLATFORM</div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:4px">Admin Girişi</div>
-    <div style="font-size:12px;color:var(--dim);margin-bottom:28px">Sadece yetkili admin hesapları erişebilir</div>
-    <div style="margin-bottom:14px">
-      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:6px">E-posta</label>
-      <input id="admin-email" type="email" placeholder="admin@example.com"
-        style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none"
-        onkeydown="if(event.key==='Enter')adminLogin()">
-    </div>
-    <div style="margin-bottom:20px">
-      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:6px">Şifre</label>
-      <input id="admin-password" type="password" placeholder="••••••••"
-        style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none"
-        onkeydown="if(event.key==='Enter')adminLogin()">
-    </div>
-    <button onclick="adminLogin()" style="width:100%;background:var(--accent);color:#000;border:none;border-radius:6px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">
-      Giriş Yap
-    </button>
-    <div id="admin-login-error" style="margin-top:12px;font-size:12px;color:var(--red);text-align:center;display:none"></div>
-  </div>
-</div>
 
 <!-- MAIN -->
 <main class="main">
@@ -492,6 +464,21 @@ select option{background:var(--raised)}
           <option value="custom">Diğer</option>
         </select>
       </div>
+      <div class="form-group">
+        <label>Paket / Mod</label>
+        <select id="nb-mode">
+          <option value="">Seç...</option>
+        </select>
+        <div class="form-hint">Bu marka için hangi özellikler aktif olacak?</div>
+      </div>
+      <div class="form-group">
+        <label>Durum</label>
+        <select id="nb-status">
+          <option value="active">Aktif</option>
+          <option value="trial">Deneme</option>
+          <option value="paused">Pasif</option>
+        </select>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-brand')">İptal</button>
@@ -679,11 +666,19 @@ async function loadAll() {
 async function loadModes() {
   const { data } = await sb.from('modes').select('*');
   allModes = data || [];
-  const sel = document.getElementById('nc-mode');
-  sel.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+  // Müşteri modalı
+  const selCust = document.getElementById('nc-mode');
+  selCust.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+  // Marka modalı
+  const selBrand = document.getElementById('nb-mode');
+  if (selBrand) selBrand.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
   allModes.forEach(m => {
-    const o = document.createElement('option');
-    o.value = m.mode_id; o.textContent = m.name; sel.appendChild(o);
+    const o1 = document.createElement('option');
+    o1.value = m.mode_id; o1.textContent = m.name; selCust.appendChild(o1);
+    if (selBrand) {
+      const o2 = document.createElement('option');
+      o2.value = m.mode_id; o2.textContent = m.name; selBrand.appendChild(o2);
+    }
   });
 }
 
@@ -902,14 +897,14 @@ async function loadBrands(customerId) {
   const tbody = document.getElementById('brands-tbody');
   if (!tbody) return;
   const { data: brands } = await sb.from('brands')
-    .select('brand_id, name, sector_template, created_at')
+    .select('brand_id, name, sector_template, created_at, mode_id, status, modes(key,name)')
     .eq('customer_id', customerId)
     .eq('is_phantom', false)
     .order('created_at');
   allBrands = brands || [];
 
   if (!allBrands.length) {
-    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">Henüz marka yok — + Marka Ekle ile başlayın</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">Henüz marka yok — + Marka Ekle ile başlayın</div></td></tr>';
     return;
   }
 
@@ -921,13 +916,20 @@ async function loadBrands(customerId) {
   }));
   allBrands = rows;
 
+  // Tablo başlığını güncelle
+  const thead = tbody.closest('table')?.querySelector('thead tr');
+  if (thead) thead.innerHTML = '<th>Marka Adı</th><th>Sektör</th><th>Paket</th><th>Durum</th><th>Şube</th><th>İşlemler</th>';
+
   tbody.innerHTML = rows.map(b => `
     <tr>
       <td><strong>${b.name}</strong></td>
       <td style="color:var(--dim)">${b.sector_template || '—'}</td>
+      <td>${b.modes ? modeBadge(b.modes.key) : '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${statusBadge(b.status || 'active')}</td>
       <td style="color:var(--dim)">${b.locCount} şube</td>
       <td>
-        <button class="btn btn-ghost btn-sm" onclick="openLocationWizardForBrand('${b.brand_id}','${b.name.replace(/'/g,"\\'")}')">+ Şube Ekle</button>
+        <button class="btn btn-ghost btn-sm" onclick="openLocationWizardForBrand('${b.brand_id}','${b.name.replace(/'/g,"\\'")}')">+ Şube</button>
+        <button class="btn btn-ghost btn-sm" onclick="changeBrandMode('${b.brand_id}','${b.name.replace(/'/g,"\\'")}')">Paket</button>
         <button class="btn btn-danger btn-sm" onclick="deleteBrand('${b.brand_id}')">Sil</button>
       </td>
     </tr>
@@ -941,15 +943,31 @@ async function loadBrands(customerId) {
   }
 }
 
+async function changeBrandMode(brandId, brandName) {
+  const modeOptions = allModes.map(m => `${m.mode_id}:${m.name}`).join('\n');
+  const modeId = prompt(`"${brandName}" için yeni paket seçin:\n\n${allModes.map((m,i)=>`${i+1}. ${m.name}`).join('\n')}\n\nMode ID girin:`);
+  if (!modeId) return;
+  const validMode = allModes.find(m => m.mode_id === modeId || m.name.toLowerCase() === modeId.toLowerCase());
+  if (!validMode) { toast('Geçersiz paket', 'error'); return; }
+  await sb.from('brands').update({ mode_id: validMode.mode_id }).eq('brand_id', brandId);
+  toast(`✓ "${brandName}" paketi "${validMode.name}" olarak güncellendi`, 'success');
+  loadBrands(currentCustomer.customer_id);
+}
+
 async function createBrand() {
   if (!currentCustomer) return;
   const name   = document.getElementById('nb-name').value.trim();
   const sector = document.getElementById('nb-sector').value;
+  const modeId = document.getElementById('nb-mode').value;
+  const status = document.getElementById('nb-status').value;
   if (!name) { toast('Marka adı zorunlu', 'error'); return; }
+  if (!modeId) { toast('Paket seçimi zorunlu', 'error'); return; }
   const { error } = await sb.from('brands').insert({
     customer_id: currentCustomer.customer_id,
     name,
     sector_template: sector,
+    mode_id: modeId,
+    status,
     monitoring_modes: ['location'],
     is_phantom: false,
   });
@@ -1529,56 +1547,10 @@ async function reconnect() {
   }
 }
 
-// ── AUTH ─────────────────────────────────────────────────────
-async function adminLogin() {
-  const email = document.getElementById('admin-email').value.trim();
-  const pass  = document.getElementById('admin-password').value;
-  const errEl = document.getElementById('admin-login-error');
-  errEl.style.display = 'none';
-
-  if (!email || !pass) { errEl.textContent = 'Email ve şifre zorunlu'; errEl.style.display = 'block'; return; }
-
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-  if (error) { errEl.textContent = 'Giriş hatası: ' + error.message; errEl.style.display = 'block'; return; }
-
-  // is_admin kontrolü
-  const { data: usr } = await sb.from('users').select('is_admin, name').eq('user_id', data.user.id).maybeSingle();
-  if (!usr?.is_admin) {
-    await sb.auth.signOut();
-    errEl.textContent = 'Bu hesabın admin yetkisi yok.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  document.getElementById('admin-login').style.display = 'none';
-  document.getElementById('admin-user-email').textContent = email;
-  loadAll();
-}
-
-async function adminLogout() {
-  await sb.auth.signOut();
-  document.getElementById('admin-login').style.display = 'flex';
-  document.getElementById('admin-email').value = '';
-  document.getElementById('admin-password').value = '';
-}
-
 // ── BOOT ─────────────────────────────────────────────────────
-(async function boot() {
+(function boot() {
   initSB();
-  // Mevcut session var mı kontrol et
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    const { data: usr } = await sb.from('users').select('is_admin').eq('user_id', session.user.id).maybeSingle();
-    if (usr?.is_admin) {
-      document.getElementById('admin-login').style.display = 'none';
-      document.getElementById('admin-user-email').textContent = session.user.email;
-      loadAll();
-      return;
-    }
-    await sb.auth.signOut();
-  }
-  // Login ekranını göster
-  document.getElementById('admin-login').style.display = 'flex';
+  loadAll();
 })();
 </script>
 </body>
