@@ -145,8 +145,31 @@ select option{background:var(--raised)}
 </head>
 <body>
 
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay" style="display:flex;position:fixed;inset:0;background:#0e0f11;z-index:999;align-items:center;justify-content:center">
+  <div style="width:360px;background:#161719;border:1px solid #2a2d32;border-radius:12px;padding:36px;animation:slideUp .25s ease">
+    <div style="font-size:13px;font-weight:700;color:#f0a500;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Sentiment</div>
+    <div style="font-size:11px;color:#52575e;margin-bottom:32px">Admin Panel — Yetkili Giriş</div>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:11px;color:#9099a5;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">E-posta</label>
+      <input id="login-email" type="email" autocomplete="username" placeholder="admin@firma.com"
+        style="width:100%;background:#1e2023;border:1px solid #2a2d32;border-radius:8px;color:#e2e4e8;font-family:inherit;font-size:13px;padding:10px 12px;outline:none">
+    </div>
+    <div style="margin-bottom:24px">
+      <label style="display:block;font-size:11px;color:#9099a5;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Şifre</label>
+      <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••"
+        style="width:100%;background:#1e2023;border:1px solid #2a2d32;border-radius:8px;color:#e2e4e8;font-family:inherit;font-size:13px;padding:10px 12px;outline:none">
+    </div>
+    <div id="login-error" style="display:none;font-size:12px;color:#ef4444;background:#1a0a0a;border:1px solid #3a1515;border-radius:6px;padding:10px 12px;margin-bottom:16px"></div>
+    <button id="login-btn" onclick="doLogin()"
+      style="width:100%;padding:11px;background:#f0a500;color:#000;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s">
+      Giriş Yap
+    </button>
+  </div>
+</div>
+
 <!-- SIDEBAR -->
-<nav class="sidebar">
+<nav class="sidebar" style="display:none">
   <div class="sidebar-logo">Sentiment<span>Admin Panel</span></div>
   <div class="nav">
     <div class="nav-section">Yönetim</div>
@@ -156,11 +179,18 @@ select option{background:var(--raised)}
     <div class="nav-item" data-page="cost" onclick="navigate('cost')">⬡ Maliyet</div>
     <div class="nav-item" data-page="settings" onclick="navigate('settings')">⬡ Ayarlar</div>
   </div>
-  <div class="sidebar-footer">v2.0 — Sadeleştirilmiş</div>
+  <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:8px">
+    <span>v2.0 — Sadeleştirilmiş</span>
+    <button onclick="doLogout()" style="background:transparent;border:1px solid #2a2d32;border-radius:6px;color:#9099a5;font-family:inherit;font-size:11px;padding:5px 10px;cursor:pointer;text-align:left;transition:all .15s"
+      onmouseover="this.style.color='#ef4444';this.style.borderColor='#ef4444'"
+      onmouseout="this.style.color='#9099a5';this.style.borderColor='#2a2d32'">
+      ⎋ Çıkış Yap
+    </button>
+  </div>
 </nav>
 
 <!-- MAIN -->
-<main class="main">
+<main class="main" style="display:none">
 
   <!-- MÜŞTERİLER -->
   <div id="page-customers" class="page active">
@@ -415,13 +445,9 @@ select option{background:var(--raised)}
         <div class="card-body">
           <div class="form-group">
             <label>Supabase URL</label>
-            <input id="set-url" type="text" placeholder="https://xxxx.supabase.co" oninput="saveSettings()">
+            <input id="set-url" type="text" placeholder="https://xxxx.supabase.co" readonly>
           </div>
-          <div class="form-group">
-            <label>Anon Key</label>
-            <input id="set-key" type="password" placeholder="eyJhbGci..." oninput="saveSettings()">
-            <div class="form-hint">anon / publishable key (service_role değil)</div>
-          </div>
+          <div class="form-hint" style="margin-bottom:12px">Bağlantı bilgileri kaynak kodda sabit tanımlıdır.</div>
           <button class="btn btn-primary" onclick="reconnect()">Bağlantıyı Test Et</button>
           <span id="conn-status" style="margin-left:12px;font-size:12px;color:var(--dim)"></span>
         </div>
@@ -621,12 +647,14 @@ select option{background:var(--raised)}
 <div class="toast-container" id="toasts"></div>
 
 <script>
-// ── KREDENSİYELLER — DOĞRUDAN GÖMÜLİ ──────────────────────
+// ── KREDENSİYELLER ─────────────────────────────────────────
+// Anon key burada olabilir — RLS koruyor, service key ASLA buraya gelmez
 const SUPABASE_URL      = 'https://escjdzsfxzwvshapzugb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzY2pkenNmeHp3dnNoYXB6dWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDQzMzgsImV4cCI6MjA4OTg4MDMzOH0.ylywekAEhONMpx5RBCdZXafUna9jZcB19etFrEcRJe8';
 const ANALYSIS_URL      = 'https://web-production-f48f6.up.railway.app';
-const APP_SECRET_VAL    = 'KadirovaCadno:36';
-const CUSTOMER_PANEL    = 'https://selimkayacan.github.io/sentiment-customer-panel';
+const CUSTOMER_PANEL    = 'https://sentiment-customer-panel.vercel.app';
+// APP_SECRET kaynak kodda YOK — system_settings tablosundan çekilir (sadece admin görür)
+let APP_SECRET_VAL = '';
 
 // ── STATE ──────────────────────────────────────────────────
 let sb = null, allCustomers = [], allModes = [], allConnectors = [];
@@ -1753,7 +1781,11 @@ async function loadSystemSettings() {
   if (!sb) return;
   const { data } = await sb.from('system_settings').select('key, value');
   const map = {};
-  (data||[]).forEach(r => map[r.key] = r.value);
+  (data||[]).forEach(r => {
+    map[r.key] = r.value;
+    // APP_SECRET'ı bellekte taze tut
+    if (r.key === 'app_secret') APP_SECRET_VAL = r.value;
+  });
 
   const el = document.getElementById('sysset-list');
   el.innerHTML = SYSSET_KEYS.map(s => `
@@ -1790,15 +1822,12 @@ async function saveSystemSettings() {
 
 // ── SETTINGS ─────────────────────────────────────────────────
 function loadSettingsPage() {
+  // Anon key ve APP_SECRET bu sayfada gösterilmez — kaynak kodda/sistem ayarlarında yönetilir
   const su = document.getElementById('set-url');
-  const sk = document.getElementById('set-key');
   const au = document.getElementById('set-analysis-url');
-  const as = document.getElementById('set-app-secret');
   const cu = document.getElementById('set-customer-url');
   if (su) su.value = SUPABASE_URL;
-  if (sk) sk.value = SUPABASE_ANON_KEY;
   if (au) au.value = ANALYSIS_URL;
-  if (as) as.value = APP_SECRET_VAL;
   if (cu) cu.value = CUSTOMER_PANEL;
 }
 
@@ -1816,11 +1845,94 @@ async function reconnect() {
   }
 }
 
-// ── BOOT ─────────────────────────────────────────────────────
-(function boot() {
+// ── AUTH ─────────────────────────────────────────────────────
+async function boot() {
   initSB();
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    showLogin();
+    return;
+  }
+  // Admin rolü kontrolü
+  const { data: profile } = await sb.from('users').select('role').eq('user_id', session.user.id).single();
+  if (!profile || profile.role !== 'admin') {
+    await sb.auth.signOut();
+    showLogin('Bu hesabın admin yetkisi yok.');
+    return;
+  }
+  // APP_SECRET'ı system_settings'ten çek — sadece admin oturumunda
+  try {
+    const { data: ss } = await sb.from('system_settings').select('key,value').in('key', ['app_secret']);
+    (ss||[]).forEach(r => { if (r.key === 'app_secret') APP_SECRET_VAL = r.value; });
+  } catch(e) { /* sessizce devam */ }
+
+  hideLogin();
   loadAll();
-})();
+}
+
+function showLogin(errMsg) {
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.querySelector('.sidebar').style.display = 'none';
+  document.querySelector('.main').style.display = 'none';
+  if (errMsg) {
+    const el = document.getElementById('login-error');
+    el.textContent = errMsg;
+    el.style.display = 'block';
+  }
+}
+
+function hideLogin() {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.querySelector('.sidebar').style.display = 'flex';
+  document.querySelector('.main').style.display = 'flex';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const btn   = document.getElementById('login-btn');
+  const err   = document.getElementById('login-error');
+  err.style.display = 'none';
+  if (!email || !pass) { err.textContent = 'E-posta ve şifre zorunlu'; err.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = 'Giriş yapılıyor...';
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    // Admin kontrolü
+    const { data: profile } = await sb.from('users').select('role').eq('user_id', data.user.id).single();
+    if (!profile || profile.role !== 'admin') {
+      await sb.auth.signOut();
+      throw new Error('Bu hesabın admin yetkisi yok.');
+    }
+    // APP_SECRET çek
+    try {
+      const { data: ss } = await sb.from('system_settings').select('key,value').in('key', ['app_secret']);
+      (ss||[]).forEach(r => { if (r.key === 'app_secret') APP_SECRET_VAL = r.value; });
+    } catch(e) { /* sessizce devam */ }
+    hideLogin();
+    loadAll();
+  } catch(e) {
+    err.textContent = e.message || 'Giriş başarısız';
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Giriş Yap';
+  }
+}
+
+async function doLogout() {
+  APP_SECRET_VAL = ''; // bellekten sil
+  await sb.auth.signOut();
+  location.reload();
+}
+
+// Enter ile login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-overlay').style.display !== 'none') {
+    doLogin();
+  }
+});
+
+boot();
 </script>
 </body>
 </html>
