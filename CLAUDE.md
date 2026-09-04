@@ -67,3 +67,10 @@ Sistem URL'leri (gmaps_url, eksi_url, twitter_url, analysis_url, app_secret...) 
 - Lokasyonlar tablosuna Marka kolonu eklendi
 - Maliyet sayfası marka bazına taşındı + SerpAPI kolonu eklendi
 - Yeni Marka modalı eklendi (`modal-new-brand`)
+
+## Deploy
+Platform: Vercel — `main` branch'e push gelince otomatik deploy olur.
+Canlı URL: https://admin.markaiq.com
+
+**Deploy etmeden önce mutlaka sor:** "staging → main'e mi deploy edelim?"
+Komut: `./deploy.sh demo` (root dizindeki deploy.sh)
